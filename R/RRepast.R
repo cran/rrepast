@@ -30,14 +30,35 @@
   # default values for model
   assign("pkg.outputdir",paste0(Sys.getenv("TMP"),"/repast-output/"), pkg.globals)
   assign("pkg.repastlibdir", "/repast.simphony/", pkg.globals)
-  assign("pkg.java.parameters","-server -Xms512m -Xmx1024m")
+  assign("pkg.java.parameters","-server -Xms512m -Xmx1024m", pkg.globals)
+  
+  # default key for Repast random seed 
+  assign("pkg.randomSeed","randomSeed", pkg.globals)
+  
+  
+  # The Random Seed. You may want to change this.
+  set.seed(exp(1)*10^6)
 }
 
 # ----- internal functions 
 
 # Returns the wrapper classes jar file location. 
 enginejar<- function() {
-  return(paste0(getwd(),"/inst/java/rrepast-engine.jar"))
+
+  # Try to guess the rrepast-engine.jar location  
+  for(p in .libPaths()) {
+    f0<- paste0(p,"/rrepast/java/rrepast-engine.jar")
+    f1<- paste0(p,"/rrepast/inst/java/rrepast-engine.jar")
+    if(file.exists(f0)) {
+      f<- f0
+      break
+    } else if(file.exists(f1)) {
+        f<- f1
+        break
+    }
+  }
+  print(paste0("enginejar",f))
+  return(f)
 }
 
 # Return the name of repast engine class name. 
@@ -79,6 +100,27 @@ setId<- function(s) {
 #' @export
 getId<- function() {
   return(get("pkg.id", pkg.globals))
+}
+
+#' @title Sets Repast randomSeed name
+#' @description Configures a non-default value for Repast randomSeed
+#' parameter name.
+#' 
+#' @param k -- The string with an alternative name for randomSeed 
+#' 
+#' @export
+setKeyRandom<- function(k){
+  assign("pkg.randomSeed",k, pkg.globals)
+}
+
+#' @title Gets Repast randomSeed name
+#' @description Returns the Repast randomSeed parameter name.
+#' 
+#' @return A string value holding the randomSeed name.
+#' 
+#' @export
+getKeyRandom<- function() {
+  return(get("pkg.randomSeed", pkg.globals))
 }
 
 #' @title Sets output directory
@@ -215,10 +257,14 @@ jvm.get_parameters<- function() {
   return(get("pkg.java.parameters", pkg.globals))  
 }
 
-#' Init R/JVM environment
+#' @title Init R/JVM environment
 #' 
-#' Initialize rJava and repast environment with classpath. This function
+#' @description Initialize rJava and repast environment with classpath. This function
 #' is called internally and it is not meant to be used directlly.
+#' 
+#' @details The default parameters can be changed as needed calling the 
+#' primitive \code{\link{jvm.set_parameters}} befor instantiating the model 
+#' engine.
 #' 
 #' @examples \dontrun{
 #'      jvm.init()}
@@ -229,7 +275,8 @@ jvm.get_parameters<- function() {
 #' calling methods and accessing fields.
 #' @import rJava
 jvm.init<- function() {
-  .jinit(parameters="-Xmx1024m")
+  # The default parameters can be changed as needed
+  .jinit(parameters= jvm.get_parameters() )
   .jaddClassPath(enginejar())
   .jaddClassPath(paste0(getModelDir(),"/bin"))
   # ----- Repast base libraries
@@ -261,7 +308,7 @@ Engine<- function() {
 #' @param f -- The full path of scenario directory 
 #' @export 
 Engine.LoadModel<- function(e,f) {
-  .jcall(e,, "LoadModel",f)  
+  .jcall(e,"V", "LoadModel",f)  
 }
 
 #' Sets the model's dataset
@@ -346,7 +393,25 @@ Engine.getParameterAsDouble<- function(e,k) {
 #' @param v -- The parameter value
 #' @export
 Engine.setParameter<- function(e,k,v) {
-  .jcall(e,"V","setParameter",k,v)
+  # Map the R type system to java object
+  switch(typeof(v),
+         character = {
+           value<- new(J("java.lang.String"), v)  
+         },
+         
+         double = {
+           value<- new(J("java.lang.Double"), v)
+         },
+         
+         integer = {
+           value<- new(J("java.lang.Integer"), v)
+         },
+         
+         logical = {
+           value<- new(J("java.lang.Boolean"), v)
+         })
+  # Invoke the setParamter method
+  .jcall(e,"V","setParameter",k,value)
 }
 
 #' Configure the maximun simulated time for the current model run
@@ -478,11 +543,11 @@ Model<- function(modeldir="",maxtime=300,dataset="none") {
   if(dir.exists(modeldir)) {
     # Configure all required directory based on their default locations
     configModelDirs(modeldir)
-  
+    
     # Initilialized JVM
     # Setup classpath inferring default values from modeldir
     jvm.init()
-  
+    
     # Creating an engine instance
     e<- Engine()
     
@@ -494,7 +559,7 @@ Model<- function(modeldir="",maxtime=300,dataset="none") {
     
     return(e)
   } else {
-      stop(paste0("The model directory does not exist: ", modeldir))
+    stop(paste0("The model directory does not exist: ", modeldir))
   }
 }
 
@@ -518,19 +583,33 @@ Load<- function(e) {
 #' @title Run simulations
 #' @description This function executes the time steps of an 
 #' instantiated model. The number of replications of model 
-#' runs can be specified by the function parameter.
+#' runs can be specified by the function parameter. The seed 
+#' parameter may be omitted and will be generated internally. 
+#' If provided, the seed collection, must contain the same 
+#' number of 'r' parameter. 
 #'
 #' @param e -- An engine object instance
 #' @param r -- The number of experiment replications
+#' @param seed - The random seed collection
 #' 
 #' @examples \dontrun{
 #'    d<- "C:/usr/models/your-model-directory"
 #'    m<- Model(d)
 #'    Load(m)
-#'    Run(m,r=2)}
-#' 
+#'    Run(m,r=2) # or Run(m,r=2,seed=c(1,2))}
+#'    
+#' @importFrom stats runif
 #' @export
-Run<- function(e,r=1) {
+Run<- function(e,r=1,seed=c()) {
+  # The default behaviour is if seed set was
+  # not provided generate a suitable set of 
+  # random seeds for the number of replications.
+  if(length(seed) == 0) {
+    seed= runif(r,-10^8,10^8)  
+  } else if(length(seed) != r) {
+    stop("The provided set of random numbers doesn't match replications!")
+  }
+  
   # Gets the current set of parameters
   p<- GetSimulationParameters(e)
   
@@ -540,6 +619,9 @@ Run<- function(e,r=1) {
   SetResultsParameters(p)
   
   for(i in 1:r) {
+    # Setting the random seed for experiment replication
+    Engine.setParameter(e,getKeyRandom(),as.integer(seed[i]))
+    
     Engine.RunModel(e)
     data<- GetOutput(e)
     print(paste0("run= ", i, " / rows=", nrow(data)))
@@ -699,12 +781,27 @@ SaveSimulationData<- function(as="csv") {
            f1<- paste0(f1,".csv")
            write.csv(results, f0, row.names=FALSE)
            write.csv(parameters, f1, row.names=FALSE)
-           },
+         },
          xls = { 
            f0<- paste0(f0,".xlsx")
            f1<- paste0(f1,".xlsx")
            write.xlsx(results, f0)
            write.xlsx(parameters, f1)
-           })
+         })
 }
 
+## ----- Data analysis functions
+
+
+#'
+#' @export
+#LatinHypercube<- function(N) {
+#  lhs.design <- randomLHS(sample.count, length(parameter.values))
+  
+  # transform the standardized random values to the real parameter value range
+  # and apply the desired random distribution
+#  lhs.design <- lapply(seq(1,length(parameter.values)), function(i) {
+#    match.fun(parameter.values[[i]]$random.function)(lhs.design[,i], parameter.values[[i]]$min, parameter.values[[i]]$max)
+#  })
+# names(lhs.design) <- parameter.names  
+#}

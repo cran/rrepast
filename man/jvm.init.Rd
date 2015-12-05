@@ -10,6 +10,11 @@ jvm.init()
 Initialize rJava and repast environment with classpath. This function
 is called internally and it is not meant to be used directlly.
 }
+\details{
+The default parameters can be changed as needed calling the 
+primitive \code{\link{jvm.set_parameters}} befor instantiating the model 
+engine.
+}
 \examples{
 \dontrun{
      jvm.init()}

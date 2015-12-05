@@ -1,8 +1,8 @@
-1cef8be57e3de3648f8829218e1e7ba5 *DESCRIPTION
+93e8b4a3c61e2a28579a028c6f0d3e8f *DESCRIPTION
 3f9402848a8326ffeeaa169bdb1cb6c4 *LICENSE
-e3b43a6c4a074d79dc318e7536d7b4ca *NAMESPACE
-70ea05f1aa2c263793e6af3579ca4718 *R/RRepast.R
-e86c73a38b912d16cc5be100e1e0becf *inst/java/rrepast-engine.jar
+304b98d956a717a45ea6f17b434c5d64 *NAMESPACE
+06dc10e251c525a52e311e17e326d53b *R/RRepast.R
+847f81f2cf58566a9e276ab4def0b2f5 *inst/java/rrepast-engine.jar
 f853f8d398c3892f53824bc4456dadce *inst/java/rrepast-integration.jar
 559eb06979c6cd54bbf22858e55d0666 *java/eclipse/rrepast-engine/-.classpath
 9cc06ce632ba0e6a85ec976012e4137b *java/eclipse/rrepast-engine/bin/LICENSE.txt
@@ -43,7 +43,7 @@ a79885dc8f1b7b36a26a1552f1ac9dc0 *man/GetOutput.Rd
 2b4765b0432d52dcd6b5162af117a1e9 *man/Logger.setLevelInfo.Rd
 7b3d87d83fa5ee62572ab212057a8036 *man/Logger.setLevelWarning.Rd
 5743a0d4c962b61a03fee961fd911f7f *man/Model.Rd
-94d274111a0fc8e998f072f1dc658b0d *man/Run.Rd
+45a0a36cb68ad8733f3badf2ccc292da *man/Run.Rd
 a793a07beae040db7ab79340633e3699 *man/SaveSimulationData.Rd
 595b77615db2c9161e37c1c7c5203408 *man/SetResults.Rd
 b9a76468c54af285c71e0c6da3274ce0 *man/SetResultsParameters.Rd
@@ -51,9 +51,11 @@ b9a76468c54af285c71e0c6da3274ce0 *man/SetResultsParameters.Rd
 f75b85108b041ae3844ef421a9e2564f *man/ShowModelPaths.Rd
 1d439a09b25667a5a7f5211055f08186 *man/createOutputDir.Rd
 640286bab8da13629b540775efd97f5f *man/getId.Rd
+50e3ee2a104bfc5b3c86647355b13038 *man/getKeyRandom.Rd
 49fdaddbaf191afe6bd54506a8ecbfa9 *man/getOutputDir.Rd
 97dc92487d8783bb9b08a093db5d7c8f *man/jvm.get_parameters.Rd
-0edb84ab37fa99587a8568a54504b575 *man/jvm.init.Rd
+34bc4654269cf802a7ce39433b3e1d40 *man/jvm.init.Rd
 02dbd4293a231d9608d6c1dc1df023c5 *man/jvm.set_parameters.Rd
 d52d0ce8894140aa59f30703701306e2 *man/setId.Rd
+84d02ae77e852141c941c9ea6ee26ee5 *man/setKeyRandom.Rd
 4c49c5fdd9d8a7aac2a6d27ae3bcd709 *man/setOutputDir.Rd
