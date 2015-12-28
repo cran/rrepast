@@ -57,7 +57,6 @@ enginejar<- function() {
         break
     }
   }
-  print(paste0("enginejar",f))
   return(f)
 }
 
@@ -631,12 +630,53 @@ Run<- function(e,r=1,seed=c()) {
     # Data data to replications
     AddResults(data)
   }
-  
 }
 
-#' Gets the output
+#' @title Run an experimental setup
 #' 
-#' Returns the results of a model a data.frame from the last
+#' @description Run the model multiple times for different parameters
+#' given by design matrix function parameter.
+#' 
+#' @details The FUN function must return zero for perfect fit and values 
+#' greater than zero otherwise.
+#'
+#' @param e -- An engine object instance
+#' @param r -- The number of experiment replications
+#' @param design -- The desing matrix holding parameter sampling
+#' @param FUN -- THe calibration function.
+#'
+#' @export
+RunExperiment<- function(e, r=1, design, FUN) {
+  output<- c()
+  
+  for(i in 1:nrow(design)) {
+    d<- design[i,]
+    
+    # -- Set parameters for next model 'Run'
+    SetSimulationParameters(e, d)
+    
+    # -- Run model with current parameter set
+    Run(e,r)
+    
+    results<- GetResults()
+    
+    # -- The user provided calibration function.
+    # -- Calibration function must return 0 for perfect fit between 
+    # -- observed and experimental data.
+    deviation<- FUN(results)
+    
+    if(is.null(deviation)) {
+      stop("Invalid user provided calibration function!")  
+    }
+    
+    output<- rbind(output,cbind(deviation,d))
+  } 
+  return(output)
+}
+
+#' @title Gets the output
+#' 
+#' @description  Returns the results of a model a data.frame from the last
 #' RUN. Should be used only if model replication is equal to 1,
 #' otherwise GetResults must be used.
 #' 
@@ -653,6 +693,49 @@ Run<- function(e,r=1,seed=c()) {
 GetOutput<- function(e) {
   c<- textConnection(Engine.GetModelOutput(e))
   read.csv(c)
+}
+
+#' @title Set parameters for running model
+#' 
+#' @description Modify the repast model parameters with 
+#' values provided in parameter 'p' which is a data frame
+#' with just one row.
+#' 
+#' @param e -- An engine object instance
+#' @param p -- A data frame with simulation parameters
+#' @export
+SetSimulationParameters<- function(e, p) {
+  if(is.null(e)) {
+    stop("Engine object is null!")  
+  }
+  
+  keys<- names(GetSimulationParameters(e))
+  
+  for(key in names(p)) {
+    value<- p[1,key]
+    if(is.factor(value)) {
+      value<- levels(value)
+    } 
+    
+    # Verify that "key" is a valid model parameter
+    if(key %in% keys) {
+      # Try to coerce the value to a type for safety
+      switch(typeof(value),
+             double = {
+               #print(paste0("double", key,"<- ",value))
+               value<- as.double(value)
+             },
+             integer = { 
+               #print(paste0("integer", key,"<- ",value))
+               value<- as.integer(value)
+             },
+             character = { 
+               #print(paste0("character", key,"<- ",value))
+               value<- as.character(value)
+             })
+      Engine.setParameter(e,key,value)          
+    }
+  }
 }
 
 #' @title Gets the simulation parameters
@@ -790,18 +873,153 @@ SaveSimulationData<- function(as="csv") {
          })
 }
 
-## ----- Data analysis functions
+##
+## ----- Bellow sensitivity analysis functions
+##
 
-
+#' @title Adds a paramter to factor collection
+#' 
+#' @description Builds up the factor collection.
+#' 
+#' @param factors The current factor collection
+#' @param lambda The function to apply FUN(p,min,max)
+#' @param name The name of factor
+#' @param min The minimun of parameter p
+#' @param max The maximun of parameter p
+#' 
+#' @examples \dontrun{
+#'    f<- AddFactor(name="Age",min=20,max=60)
+#'    f<- AddFactor(factors=f, name="Weight",min=50,max=120)}
+#' 
+#' @return The collection of created factors
 #'
 #' @export
-#LatinHypercube<- function(N) {
-#  lhs.design <- randomLHS(sample.count, length(parameter.values))
+AddFactor<- function(factors=c(), lambda="qunif",name, min, max) {
+  if(max < min) {
+    stop("Invalid factor range!")
+  }
   
-  # transform the standardized random values to the real parameter value range
-  # and apply the desired random distribution
-#  lhs.design <- lapply(seq(1,length(parameter.values)), function(i) {
-#    match.fun(parameter.values[[i]]$random.function)(lhs.design[,i], parameter.values[[i]]$min, parameter.values[[i]]$max)
-#  })
-# names(lhs.design) <- parameter.names  
-#}
+  # if parameter already existe replace the current value
+  rrow<- c(lambda=lambda,name=name,min=min,max=max)
+  rownames(rrow)<- NULL
+  if(length(factors) > 0 && factors[,"name"] == name) {
+    i<- which(factors[,"name"] == name)  
+    factors[i,]<- c(rrow)
+  } else {
+    factors<- rbind(factors,c(rrow))
+  }
+  return(factors)
+}
+
+#' @title Get the number of factors
+#' 
+#' @description Returns the total number of factors
+#' 
+#' @param factors -- A collection of factors created with AddFactor
+#' 
+#' @return The number of parameters in factors collection
+#'
+#' @export
+GetFactorsSize<- function(factors) {
+  n<- nrow(factors)
+  if(is.null(n)) n<- 0
+  return(n)
+}
+
+#' @title Corrects the LHS design matrix
+#' 
+#' @description Correct the LHS sampling matrix for a 
+#' specific range applying the lambda function. The default
+#' value of 'lambda' is 'qunif'.
+#' 
+#' @param design -- The LHS design matrix
+#' @param factors -- THe collection of factors
+#' 
+#' @return The corrected design matrix
+#'
+#' @export
+ApplyFactorRange<- function(design, factors) {
+  k<- GetFactorsSize(factors)
+  d<- sapply(1:k, function(p) {match.fun(factors[p,"lambda"])(design[,p],as.numeric(factors[p,"min"]),as.numeric(factors[p,"max"]))})
+  d<- as.data.frame(d)
+  names(d)<- factors[,"name"]
+  return(d)
+}
+
+#' @title Generate a LHS sample for model parameters
+#' 
+#' @description Generate the LHS sampling for evaluating 
+#' the parameters of a model.
+#' 
+#' @param n -- The number of samples
+#' @param factors -- The model's parameters which will be evaluated
+#' 
+#' @return The LHS design matrix for provided parameters
+#' 
+#' @importFrom lhs randomLHS
+#' @export
+LatinHypercube<- function(n=10, factors=c()) {
+  k<- GetFactorsSize(factors)
+  if(k == 0) {
+    stop("Empty factor collection!")
+  }
+  
+  # --- Apply the desired range
+  design<- ApplyFactorRange(randomLHS(n, k),factors)
+  return(design)
+}
+
+#' @title Builds the simulation parameter set
+#' 
+#' @description Merges the design matrix with parameters which 
+#' will be keep fixed along simulation runs.
+#' 
+#' @param design -- The experimental desing matrix for at least one factor
+#' @param parameters -- All parameters of the repast model.
+#' 
+#' @return A data frame holding all parameters required for running the model
+#' 
+#' @examples \dontrun{
+#'    modeldir<- "c:/usr/models/BactoSim(HaldaneEngine-1.0)"
+#'    e<- Model(modeldir=modeldir,dataset="ds::Output")
+#'    Load(e)
+#'    
+#'    f<- AddFactor(name="cyclePoint",min=40,max=90)
+#     f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+#'    
+#'    p<- GetSimulationParameters(e)
+#'    
+#'    d<- LatinHypercube(factors=f)
+#'    
+#'    p1<- BuildParameterSet(d,p)}
+#' 
+#' @export
+BuildParameterSet<- function(design, parameters) {
+  v<- design
+  tmp.p<- parameters
+  for(n in names(design)) {
+    # Drop parameters columns which are in design matrix
+    tmp.p[n]<- NULL
+  }
+  
+  # Now join two data frames
+  for(i in 1:length(names(tmp.p))) {
+    v<- cbind(tmp.p[i],v)      
+  }
+  return(v)
+}
+
+
+##> rm(list=ls())
+##> library(raster)
+##> my.cost<- function(r) { return(runif(1,0,10)) }
+##> modeldir<- "c:/usr/models/BactoSim(HaldaneEngine-1.0)"
+##> e<- Model(modeldir=modeldir,dataset="ds::Output")
+##> Load(e)
+##> my.cost<- function(r) { return(runif(1,0,10)) }
+##> f<- AddFactor(name="cyclePoint",min=40,max=90)
+##> f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+##> d<- LatinHypercube(factors=f)
+##> p<- GetSimulationParameters(e)
+##> exp.design<- BuildParameterSet(d,p)
+##> v<- RunExperiment(e,r=1,exp.design,my.cost)
