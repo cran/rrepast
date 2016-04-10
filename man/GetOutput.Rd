@@ -20,7 +20,7 @@ otherwise GetResults must be used.
 \examples{
 \dontrun{
    d<- "C:/usr/models/your-model-directory"
-   m<- RepastModel(d)
+   m<- Model(d)
    ...
    data<- GetOutput(m)}
    

@@ -4,7 +4,7 @@
 \alias{Model}
 \title{The easy API for model initilization}
 \usage{
-Model(modeldir = "", maxtime = 300, dataset = "none")
+Model(modeldir = "", maxtime = 300, dataset = "none", load = FALSE)
 }
 \arguments{
 \item{modeldir}{The installation directory of some repast model}
@@ -12,6 +12,8 @@ Model(modeldir = "", maxtime = 300, dataset = "none")
 \item{maxtime}{The total simulated time}
 
 \item{dataset}{The name of any model aggregate dataset}
+
+\item{load}{--- If true instantiate model and load scenario}
 }
 \value{
 Returns the instance of repast model

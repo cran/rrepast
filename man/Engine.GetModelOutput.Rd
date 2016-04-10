@@ -19,7 +19,7 @@ data.
 \examples{
 \dontrun{
    d<- "C:/usr/models/your-model-directory"
-   m<- Engine(d)
-   csv<- RepastModel.GetOutput(m)}
+   m<- Model(d)
+   csv<- Engine.GetModelOutput(m)}
 }
 

@@ -18,7 +18,7 @@ to be "drained" by the function Engine.GetModelOutput.
 \examples{
 \dontrun{
    d<- "C:/usr/models/your-model-directory"
-   m<- RepastModel(d)
+   m<- Model(d)
    setAggregateDataSet(m,"dataset-name")}
 }
 

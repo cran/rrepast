@@ -9,11 +9,11 @@
 
 
 # ------------------------------------------------------------
-# .onLoad shows the library disclaimer
-#
+# .onLoad, Hook for loading package namespace
+# 
 # ------------------------------------------------------------
 .onLoad<- function(libname, pkgname) {
-  #packageStartupMessage("rrepast - interface API to Repast Simphony, version 0.1\n")
+  #packageStartupMessage("R/Repast: Integrating Repast Models into R\n")
   assign("pkg.globals", new.env(), envir=parent.env(environment()))
   
   # Internal variables
@@ -27,20 +27,44 @@
   assign("pkg.parameters", data.frame(), pkg.globals)
   assign("pkg.results", data.frame(), pkg.globals)
   
+  # progress bar internals
+  assign("pkg.progressbar", NULL, pkg.globals)
+  assign("pkg.progressbar.enabled", FALSE, pkg.globals)
+
   # default values for model
-  assign("pkg.outputdir",paste0(Sys.getenv("TMP"),"/repast-output/"), pkg.globals)
+  assign("pkg.outputdir",paste0(Sys.getenv("TMP"),"/rrepast-output/"), pkg.globals)
   assign("pkg.repastlibdir", "/repast.simphony/", pkg.globals)
   assign("pkg.java.parameters","-server -Xms512m -Xmx1024m", pkg.globals)
   
   # default key for Repast random seed 
   assign("pkg.randomSeed","randomSeed", pkg.globals)
   
-  
   # The Random Seed. You may want to change this.
   set.seed(exp(1)*10^6)
+  
+  # Define funcions which are not present in ond R versions
+  compatibility()
 }
 
+
+
 # ----- internal functions 
+
+# Define some required functions when not available from current R version
+compatibility<- function() {
+  if(getRversion() <= "3.1") {
+    # dir.exists function is only available from R 3.2
+    f<- function(d) {
+      cat("my dir.exists()")
+      v<- file.info(d)$isdir
+      return(ifelse(is.na(v), FALSE, v))
+    }
+    
+    # This is a trick to get the reference to the current environment
+    e<- as.environment(environment(enginejar))
+    assign("dir.exists", f, e, immediate = FALSE)
+  }
+}
 
 # Returns the wrapper classes jar file location. 
 enginejar<- function() {
@@ -172,13 +196,13 @@ getBaseDir<- function() {
 }
 
 # Sets the directory where repast model is installed which normally
-# is a subdirectory bellow installation base directory
+# is a subdirectory below installation base directory
 setModelDir<- function(s) {
   assign("pkg.modeldir", s, pkg.globals)  
 }
 
 # Sets the directory where repast model is installed which normally
-# is a subdirectory bellow installation base directory
+# is a subdirectory below installation base directory
 getModelDir<- function() {
   return(get("pkg.modeldir", pkg.globals))  
 }
@@ -282,6 +306,44 @@ jvm.init<- function() {
   repastlibs()
 }
 
+#' @title jvm.setOut
+#' 
+#' @description Set the System.out filed to a file
+#' 
+#' @param f --- The file name
+#' 
+#' @examples \dontrun{
+#'    jvm.setOut("/tmp/SysteOut.log")}
+#'    
+#' @import rJava
+#' @export 
+jvm.setOut<- function(f) {
+  ## -- Create the output dir if required
+  createOutputDir()
+  
+  my.f<- paste0(getOutputDir(),f)
+  ## -- Java calls to redirect the output to a file
+  obj.fos<- new(J("java.io.FileOutputStream"),my.f)
+  obj.ps<- new(J("java.io.PrintStream"),obj.fos)
+  .jcall("java/lang/System","V", "setOut",obj.ps)    
+}
+
+#' @title jvm.resetOut
+#' 
+#' @description Reset the System.out filed value to console output
+#' 
+#' 
+#' @examples \dontrun{
+#'    jvm.resetOut()}
+#'    
+#' @import rJava
+#' @export 
+jvm.resetOut<- function() {
+  obj.os<- .jfield("java/io/FileDescriptor", name="out")
+  obj.fos<- new(J("java.io.FileOutputStream"),obj.os)
+  obj.ps<- new(J("java.io.PrintStream"),obj.fos)
+  .jcall("java/lang/System","V", "setOut",obj.ps)    
+}
 
 # ----- Wrapper functions for Engine class method calls
 
@@ -319,7 +381,7 @@ Engine.LoadModel<- function(e,f) {
 #' @param k -- The repast model's data set name
 #' @examples \dontrun{
 #'    d<- "C:/usr/models/your-model-directory"
-#'    m<- RepastModel(d)
+#'    m<- Model(d)
 #'    setAggregateDataSet(m,"dataset-name")}
 #' @export
 Engine.SetAggregateDataSet<- function(e,k) {
@@ -393,21 +455,21 @@ Engine.getParameterAsDouble<- function(e,k) {
 #' @export
 Engine.setParameter<- function(e,k,v) {
   # Map the R type system to java object
-  switch(typeof(v),
-         character = {
-           value<- new(J("java.lang.String"), v)  
+  switch(Engine.getParameterType(e,k),
+         java.lang.String = {
+           value<- new(J("java.lang.String"), as.character(v))  
          },
          
          double = {
-           value<- new(J("java.lang.Double"), v)
+          value<- new(J("java.lang.Double"), as.double(v))
          },
          
-         integer = {
-           value<- new(J("java.lang.Integer"), v)
+         int = {
+           value<- new(J("java.lang.Integer"), as.integer(v))
          },
          
-         logical = {
-           value<- new(J("java.lang.Boolean"), v)
+         boolean = {
+           value<- new(J("java.lang.Boolean"), as.logical(v))
          })
   # Invoke the setParamter method
   .jcall(e,"V","setParameter",k,value)
@@ -449,8 +511,8 @@ Engine.RunModel<- function(e) {
 #' @return An array of strings containing the model's output
 #' @examples \dontrun{
 #'    d<- "C:/usr/models/your-model-directory"
-#'    m<- Engine(d)
-#'    csv<- RepastModel.GetOutput(m)}
+#'    m<- Model(d)
+#'    csv<- Engine.GetModelOutput(m)}
 #' @importFrom utils read.csv
 #' @export
 Engine.GetModelOutput<- function(e) {
@@ -512,10 +574,155 @@ ShowClassPath<- function() {
   .jclassPath()
 }
 
+### --- Progress Bar functions
+
+#' @title PB.set
+#' 
+#' @description  Ses the progress bar descriptor
+#' 
+#' @param obj -- The progress bar descriptor
+#' 
+#' @export
+PB.set<- function(obj) {
+  assign("pkg.progressbar", obj, pkg.globals)      
+}
+
+#' @title PB.get
+#' 
+#' @description  Gets the the progress bar descriptor
+#' 
+#' @export
+PB.get<- function() {
+  return(get("pkg.progressbar", pkg.globals))
+}
+
+#' @title PB.enable
+#' 
+#' @description  Enables the progress bar visualization
+#' 
+#' @export
+PB.enable<- function() {
+  assign("pkg.progressbar.enabled", TRUE, pkg.globals)      
+}
+
+#' @title PB.disable
+#' 
+#' @description  Disable the progress bar visualization
+#' 
+#' @export
+PB.disable<- function() {
+  assign("pkg.progressbar.enabled", FALSE, pkg.globals)      
+}
+
+#' @title PB.isEnabled
+#' 
+#' @description Returns the global value indicating if progress bar 
+#' is enabled.
+#' 
+#' @return Boolean TRUE if progress bar must be shown
+#' 
+#' @export
+PB.isEnabled<- function() {
+  return(get("pkg.progressbar.enabled", pkg.globals))
+}
+
+#' @title PB.init
+#' 
+#' @description Initialize progress bar for model
+#' execution.
+#' 
+#' @param psets -- The total number of paramter sets being simulated
+#' @param replications -- The number of replications per simulation round
+#' 
+#' @importFrom utils setTxtProgressBar txtProgressBar
+#' 
+#' @export
+PB.init<- function(psets, replications) {
+  
+  ## -- Check if init function has already been called from RunExperiment
+  if(length(grep("(RunExperiment\\s*\\()|(Run\\s*\\()",sys.calls())) == 2) {
+    ##print(grep("(RunExperiment\\s*\\()|(Run\\s*\\()",sys.calls(),value=TRUE))  
+    return()
+  }
+  
+  ## -- print(grep("(RunExperiment\\s*\\()|(Run\\s*\\()",sys.calls(),value=TRUE))  
+  ## -- print("PB.init")
+  
+  if(PB.isEnabled()) {
+    total<- psets * replications
+    pbar<- txtProgressBar(min = 0, max = total, style = 3)
+    pbar$pset<- 1
+    PB.set(pbar)  
+  }
+  return(sys.calls())
+}
+
+#' @title PB.close
+#' 
+#' @description Close the progress bar descriptor
+#' 
+#' @export
+PB.close<- function() {
+  ## -- Check if init function has already been called from RunExperiment
+  if(length(grep("(RunExperiment\\s*\\()|(Run\\s*\\()",sys.calls())) == 2) {
+    return()
+  }
+  
+  if(PB.isEnabled()) {
+    pbar<- PB.get()
+    if(!is.null(pbar)) {
+      close(pbar)
+      PB.set(NULL)  
+    } else {
+      stop("Progress bar has not been initialized!")
+    }
+  }
+}
+
+#' @title PB.pset
+#' 
+#' @description Update pset value
+#' 
+#' @param v -- The current parameter set being simulated
+#' 
+#' @export
+PB.pset<- function(v) {
+  if(PB.isEnabled()) {
+    pbar<- PB.get()
+    if(!is.null(pbar)) {
+      pbar$pset<- v
+      PB.set(pbar)  
+    }  else {
+      stop("Progress bar has not been initialized!")
+    }
+  }
+}
+
+#' @title PB.update
+#' 
+#' @description Update progress bar
+#' 
+#' @param r -- The current replication number
+#' 
+#' @importFrom utils setTxtProgressBar txtProgressBar
+#' 
+#' @export
+PB.update<- function(r) {
+  if(PB.isEnabled()) {
+    pbar<- PB.get()
+    if(!is.null(pbar)) {
+      setTxtProgressBar(pbar, pbar$pset*r)
+    }  else {
+      stop("Progress bar has not been initialized!")
+    }
+  }
+}
 
 #' @title The easy API for model initilization
+#' 
 #' @description Instantiate a repast model from the model dir without
 #' loading the scenario file.
+#' 
 #' @details This is the entry point for model execution. Typically 
 #' any model execution will start with this function which encapsulates 
 #' all low level calls for model initialization. In order to perform 
@@ -527,6 +734,7 @@ ShowClassPath<- function() {
 #' @param modeldir The installation directory of some repast model
 #' @param maxtime The total simulated time
 #' @param dataset The name of any model aggregate dataset
+#' @param load --- If true instantiate model and load scenario
 #' 
 #' @return Returns the instance of repast model
 #' @examples \dontrun{
@@ -538,7 +746,7 @@ ShowClassPath<- function() {
 #' on Modeling and Computer Simulation, Vol. 16, Issue 1, pp. 1-25, ACM,
 #' New York, New York, USA (January 2006).
 #' @export
-Model<- function(modeldir="",maxtime=300,dataset="none") {
+Model<- function(modeldir="",maxtime=300,dataset="none", load=FALSE) {
   if(dir.exists(modeldir)) {
     # Configure all required directory based on their default locations
     configModelDirs(modeldir)
@@ -555,6 +763,10 @@ Model<- function(modeldir="",maxtime=300,dataset="none") {
     
     # Configure the dataset
     Engine.SetAggregateDataSet(e,dataset)
+    
+    if(load == TRUE) {
+      Load(e)
+    }
     
     return(e)
   } else {
@@ -589,7 +801,7 @@ Load<- function(e) {
 #'
 #' @param e -- An engine object instance
 #' @param r -- The number of experiment replications
-#' @param seed - The random seed collection
+#' @param seed -- The random seed collection
 #' 
 #' @examples \dontrun{
 #'    d<- "C:/usr/models/your-model-directory"
@@ -617,19 +829,31 @@ Run<- function(e,r=1,seed=c()) {
   
   SetResultsParameters(p)
   
+  ## --- Progress Bar initialization
+  PB.init(1, r)
+  
   for(i in 1:r) {
-    # Setting the random seed for experiment replication
+    ## --- Setting the random seed for experiment replication
     Engine.setParameter(e,getKeyRandom(),as.integer(seed[i]))
-    
+
+    ## --- Pass the control to Repast to run simulation      
     Engine.RunModel(e)
+
     data<- GetOutput(e)
-    print(paste0("run= ", i, " / rows=", nrow(data)))
+    
+    ## --- Just for debug: print(paste0("run= ", i, " / rows=", nrow(data)))
+    
     # Sets the current run number
     data$run<- i
     
     # Data data to replications
     AddResults(data)
+    
+    # Update progress bar
+    PB.update(i)
   }
+  ## --- Progress Bar clean up
+  PB.close()
 }
 
 #' @title Run an experimental setup
@@ -644,16 +868,40 @@ Run<- function(e,r=1,seed=c()) {
 #' @param r -- The number of experiment replications
 #' @param design -- The desing matrix holding parameter sampling
 #' @param FUN -- THe calibration function.
-#'
+#' 
+#' @examples \dontrun{
+#'    my.cost<- function(params, results) { # your best fit calculation, being 0 the best metric.  }
+#'    d<- "c:/usr/models/your-model-directory"
+#'    m<- Model(d,dataset="ds::Output")
+#'    Load(m)
+#'    f<- AddFactor(name="cyclePoint",min=40,max=90)
+#'    f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+#'    d<- LatinHypercube(factors=f)
+#'    p<- GetSimulationParameters(e)
+#'    exp.design<- BuildParameterSet(d,p)
+#'    v<- RunExperiment(e,r=1,exp.design,my.cost) }
+#'    
+#' @return A list with output and dataset
+#' 
 #' @export
 RunExperiment<- function(e, r=1, design, FUN) {
+  paramset<- c()
   output<- c()
+  dataset<- c()
   
-  for(i in 1:nrow(design)) {
+  psets<- nrow(design)
+  
+  ## --- Progress Bar initialization
+  PB.init(psets, r)
+  
+  for(i in 1:psets) {
     d<- design[i,]
     
     # -- Set parameters for next model 'Run'
     SetSimulationParameters(e, d)
+    
+    # -- Update progress bar pset value
+    PB.pset(i)
     
     # -- Run model with current parameter set
     Run(e,r)
@@ -663,15 +911,85 @@ RunExperiment<- function(e, r=1, design, FUN) {
     # -- The user provided calibration function.
     # -- Calibration function must return 0 for perfect fit between 
     # -- observed and experimental data.
-    deviation<- FUN(results)
+    calibration<- FUN(d,results)
     
-    if(is.null(deviation)) {
+    if(is.null(calibration)) {
       stop("Invalid user provided calibration function!")  
     }
     
-    output<- rbind(output,cbind(deviation,d))
-  } 
-  return(output)
+    # -- The 'pset' is the paramter set id
+    pset<- i
+    
+    paramset<- rbind(paramset,cbind(pset,d))
+    output<- rbind(output,cbind(pset,calibration))
+    dataset<- rbind(dataset,cbind(pset,results))
+  }
+  
+  ## --- Progress Bar clean up
+  PB.close()
+  
+  return(list(paramset=paramset, output=output, dataset=dataset))
+}
+
+#' @title Helper function to get experiment \code{paramset}
+#' 
+#' @description The RunExperiment function returns a list holding
+#' the \code{paramset}, \code{output} and \code{dataset} collection.
+#' The \code{paramset} collection contains the parameters used for 
+#' running the experimental setup. The \code{output} has the results 
+#' from user provided calibration function. The \code{dataset} 
+#' collection has the raw output of 'Repast' aggregated dataset.
+#' 
+#' @examples \dontrun{
+#'    d<- "C:/usr/models/your-model-directory"
+#'    m<- Model(d)
+#'    ...
+#'    e<- RunExperiment(e,r=1,exp.design,my.cost)
+#'    p<- getExperimentParamSet(e)}
+#' 
+#' @param e -- The experiement object returned by \code{\link{RunExperiment}} 
+#' 
+#' @return The reference to \code{output} container.
+#' @export
+getExperimentParamSet<- function(e) {
+  v<- e$paramset
+  return(v)
+}
+
+#' @title Helper function to get experiment \code{output}
+#' 
+#' @description The RunExperiment function returns a list holding
+#' the \code{paramset}, \code{output} and \code{dataset} collection.
+#' The \code{paramset} collection contains the parameters used for 
+#' running the experimental setup. The \code{output} has the results 
+#' from user provided calibration function. The \code{dataset} 
+#' collection has the raw output of 'Repast' aggregated dataset.
+#' 
+#' @param e -- The experiement object returned by \code{\link{RunExperiment}} 
+#' 
+#' @return The reference to \code{output} container.
+#' @export
+getExperimentOutput<- function(e) {
+  v<- e$output
+  return(v)
+}
+
+#' @title Helper function to get experiment \code{dataset}
+#' 
+#' @description The RunExperiment function returns a list holding
+#' the \code{paramset}, \code{output} and \code{dataset} collection.
+#' The \code{paramset} collection contains the parameters used for 
+#' running the experimental setup. The \code{output} has the results 
+#' from user provided calibration function. The \code{dataset} 
+#' collection has the raw output of 'Repast' aggregated dataset.
+#' 
+#' @param e -- The experiement object returned by \code{\link{RunExperiment}} 
+#' 
+#' @return The reference to \code{dataset} container.
+#' @export
+getExperimentDataset<- function(e) {
+  v<- e$dataset
+  return(v)
 }
 
 #' @title Gets the output
@@ -684,7 +1002,7 @@ RunExperiment<- function(e, r=1, design, FUN) {
 #' @return Returns a data.frame with output data
 #' @examples \dontrun{
 #'    d<- "C:/usr/models/your-model-directory"
-#'    m<- RepastModel(d)
+#'    m<- Model(d)
 #'    ...
 #'    data<- GetOutput(m)}
 #'    
@@ -708,33 +1026,53 @@ SetSimulationParameters<- function(e, p) {
   if(is.null(e)) {
     stop("Engine object is null!")  
   }
-  
-  keys<- names(GetSimulationParameters(e))
-  
+
   for(key in names(p)) {
     value<- p[1,key]
     if(is.factor(value)) {
       value<- levels(value)
     } 
     
-    # Verify that "key" is a valid model parameter
-    if(key %in% keys) {
-      # Try to coerce the value to a type for safety
-      switch(typeof(value),
-             double = {
-               #print(paste0("double", key,"<- ",value))
-               value<- as.double(value)
-             },
-             integer = { 
-               #print(paste0("integer", key,"<- ",value))
-               value<- as.integer(value)
-             },
-             character = { 
-               #print(paste0("character", key,"<- ",value))
-               value<- as.character(value)
-             })
-      Engine.setParameter(e,key,value)          
-    }
+    ## Modify the default set of parameters
+    SetSimulationParameter(e, key, value)
+  }
+}
+
+#' @title SetSimulationParameter 
+#' 
+#' @description Modify model's default parameter collection
+#' 
+#' @param e -- An engine object instance
+#' @param key -- The paramter name
+#' @param value -- The parameter value
+#' 
+#' @export
+SetSimulationParameter<- function(e, key, value) {
+  if(is.null(e)) {
+    stop("Engine object is null!")  
+  }
+  
+  keys<- names(GetSimulationParameters(e))
+  
+  # Verify that "key" is a valid model parameter
+  if(key %in% keys) {
+  # Try to coerce the value to a type for safety
+    switch(typeof(value),
+      double = {
+        #print(paste0("double", key,"<- ",value))
+        value<- as.double(value)
+      },
+      
+      integer = { 
+        #print(paste0("integer", key,"<- ",value))
+        value<- as.integer(value)
+      },
+      
+      character = { 
+         #print(paste0("character", key,"<- ",value))
+         value<- as.character(value)
+       })
+    Engine.setParameter(e,key,value)          
   }
 }
 
@@ -834,13 +1172,19 @@ SetResultsParameters<- function(d) {
 #' @description Saves the simulation results of last call to Run(e)
 #' function.
 #' 
+#' @details The model must have been initialized or user must call 
+#' \code{setId} explicitelly.
+#' 
 #' @param as The desired output type, must be csv or xls
+#' @param experiment The experiment output
+#' 
+#' @return The id of saved data
 #' 
 #' @importFrom xlsx write.xlsx
 #' @importFrom digest digest
 #' @importFrom utils write.csv
 #' @export
-SaveSimulationData<- function(as="csv") {
+SaveSimulationData<- function(as="csv", experiment=NULL) {
   # Creating output dir if needed
   createOutputDir()
   filename<- getId()
@@ -848,33 +1192,57 @@ SaveSimulationData<- function(as="csv") {
     stop("Model was not initialized correctly!")
   }
   
-  # The parameters of current simultation output
-  parameters<- GetResultsParameters()
+  paramset<- NULL
+  output<- NULL
+  dataset<- NULL
   
-  # The results of simulation run
-  results<- GetResults()
+  if(!is.null(experiment)) {
+    paramset<- getExperimentParamSet(experiment)
+    output<- getExperimentOutput(experiment)
+    dataset<- getExperimentDataset(experiment)
+    
+  } else {
+    # The parameters of current simultation output
+    paramset<- GetResultsParameters()
+    
+    # The results of simulation run
+    dataset<- GetResults()  
+  }
+  
+  
   
   hash <- digest(Sys.time(), algo="crc32")
-  f0<- paste0(getOutputDir(),tolower(filename),"-",hash)
-  f1<- paste0(getOutputDir(),tolower(filename),"-parameters-",hash)
+  f0<- paste0(getOutputDir(),tolower(filename),"-paramset-",hash)
+  f1<- paste0(getOutputDir(),tolower(filename),"-output-",hash)
+  f2<- paste0(getOutputDir(),tolower(filename),"-dataset-",hash)
   
   switch(as,
          csv = {
            f0<- paste0(f0,".csv")
            f1<- paste0(f1,".csv")
-           write.csv(results, f0, row.names=FALSE)
-           write.csv(parameters, f1, row.names=FALSE)
+           f2<- paste0(f2,".csv")
+           write.csv(paramset, f0, row.names=FALSE)
+           if(!is.null(output)) {
+             write.csv(output, f1, row.names=FALSE)  
+           }
+           write.csv(dataset, f2, row.names=FALSE)
          },
          xls = { 
            f0<- paste0(f0,".xlsx")
            f1<- paste0(f1,".xlsx")
-           write.xlsx(results, f0)
-           write.xlsx(parameters, f1)
+           f2<- paste0(f2,".xlsx")
+           
+           write.xlsx(paramset, f0)
+           if(!is.null(output)) {
+             write.xlsx(output, f1)
+           }
+           write.xlsx(dataset, f0)
          })
+  return(hash)
 }
 
 ##
-## ----- Bellow sensitivity analysis functions
+## ----- Below sensitivity analysis functions
 ##
 
 #' @title Adds a paramter to factor collection
@@ -941,32 +1309,17 @@ GetFactorsSize<- function(factors) {
 ApplyFactorRange<- function(design, factors) {
   k<- GetFactorsSize(factors)
   d<- sapply(1:k, function(p) {match.fun(factors[p,"lambda"])(design[,p],as.numeric(factors[p,"min"]),as.numeric(factors[p,"max"]))})
-  d<- as.data.frame(d)
+  
+  if(is.null(nrow(d))) {
+    ## --- Handle the case where sample size is 1
+    d<- as.data.frame(t(d))  
+  } else {
+    ## --- Handle the case where sample size > 1
+    d<- as.data.frame(d)  
+  }
+
   names(d)<- factors[,"name"]
   return(d)
-}
-
-#' @title Generate a LHS sample for model parameters
-#' 
-#' @description Generate the LHS sampling for evaluating 
-#' the parameters of a model.
-#' 
-#' @param n -- The number of samples
-#' @param factors -- The model's parameters which will be evaluated
-#' 
-#' @return The LHS design matrix for provided parameters
-#' 
-#' @importFrom lhs randomLHS
-#' @export
-LatinHypercube<- function(n=10, factors=c()) {
-  k<- GetFactorsSize(factors)
-  if(k == 0) {
-    stop("Empty factor collection!")
-  }
-  
-  # --- Apply the desired range
-  design<- ApplyFactorRange(randomLHS(n, k),factors)
-  return(design)
 }
 
 #' @title Builds the simulation parameter set
@@ -995,13 +1348,13 @@ LatinHypercube<- function(n=10, factors=c()) {
 #' 
 #' @export
 BuildParameterSet<- function(design, parameters) {
-  v<- design
+  v<- as.data.frame(design)
   tmp.p<- parameters
-  for(n in names(design)) {
+  for(n in names(v)) {
     # Drop parameters columns which are in design matrix
     tmp.p[n]<- NULL
   }
-  
+
   # Now join two data frames
   for(i in 1:length(names(tmp.p))) {
     v<- cbind(tmp.p[i],v)      
@@ -1009,17 +1362,695 @@ BuildParameterSet<- function(design, parameters) {
   return(v)
 }
 
+#' @title SequenceItem
+#' 
+#' @description Generate a sequence from min to max using an increment
+#' based on the number of of elements in v
+#' 
+#' @param v -- A column of n x k design matrix
+#' @param min -- The lower boundary of range
+#' @param max -- The uper boundary of range
+#' 
+#' @return A sequence between min and max value
+#' 
+#' @export
+SequenceItem<- function(v,min,max) {
+  n<- length(v)
+  delta<- (max-min)/(n-1)
+  return(seq(min,max,delta))
+}
 
-##> rm(list=ls())
-##> library(raster)
-##> my.cost<- function(r) { return(runif(1,0,10)) }
-##> modeldir<- "c:/usr/models/BactoSim(HaldaneEngine-1.0)"
-##> e<- Model(modeldir=modeldir,dataset="ds::Output")
-##> Load(e)
-##> my.cost<- function(r) { return(runif(1,0,10)) }
-##> f<- AddFactor(name="cyclePoint",min=40,max=90)
-##> f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
-##> d<- LatinHypercube(factors=f)
-##> p<- GetSimulationParameters(e)
-##> exp.design<- BuildParameterSet(d,p)
-##> v<- RunExperiment(e,r=1,exp.design,my.cost)
+#' @title DFToMatrix
+#' 
+#' @description This function converts data frames to matrix data type.
+#' 
+#' @param d -- The data frame
+#' @param n -- The column names to be converted. Null for all data frame columns
+#' 
+#' @return The data frame converted to a matrix
+#' @export
+DFToMatrix<- function(d,n=c()) {
+  if(length(n) == 0) {
+    n<- names(d)
+  }
+  m<- c()
+  for(k in n) {
+    m<- cbind(m,as.matrix(d[,k]))
+  }
+  colnames(m)<- n
+  return(m)
+}
+
+
+# ----- DoE - Design of Experiments  
+# ----- AoE - Analysis of Experimental Data
+
+#' @title AoE.RMSD
+#' 
+#' @description  A simple Root-Mean-Square Deviation 
+#' calculation.
+#' 
+#' @param xs -- The simulated data set
+#' @param xe -- The experimental data set
+#' 
+#' @return The RMSD value for provided datasets
+#' @export
+AoE.RMSD<- function(xs, xe) {
+  return(sqrt(mean((xs - xe)^2, na.rm = TRUE)))
+}
+
+#' @title AoE.CoV
+#' 
+#' @description A simple funcion for calculate the 
+#' Coefficient of Variation
+#' 
+#' @param d --- The data collection
+#' @return The coefficient of variation for data
+#' 
+#' @importFrom stats sd
+#' 
+#' @export
+AoE.CoV<- function(d) {
+  return((sd(d,na.rm = TRUE)/mean(d,na.rm = TRUE)) * 100)
+}
+
+#' @title AoE.ColumnCoV
+#' 
+#' @description This function Calculates the relative squared 
+#' deviation (RSD or CoV) for an used provided column name \code{key}
+#' in the parameter \code{dataset}. 
+#' 
+#' @param dataset -- A model output dataset
+#' @param key -- Column name from output dataset
+#' 
+#' @return A data frame with Coefficient of variations
+#' @export
+AoE.ColumnCoV<- function(dataset, key) {
+  m.run<- dataset$run
+  if(is.null(m.run)) {
+    stop("The dataset is not an instance of model output!")
+  }
+  
+  result<- c()
+  m.max<- max(m.run)
+  
+  for(i in 1:m.max) {
+    m.data<- with(dataset,dataset[run %in% seq(1,i), key])
+    result<- rbind(result,cbind(i, AoE.CoV(m.data)))
+  }
+  result<- as.data.frame(result)
+  names(result)<- c("sample","RSD")
+  return(result)
+}
+
+#' @title AoE.Stability
+#' 
+#' @description This function verifies the stability 
+#' of CoV for all columns given by parameter \code{keys}
+#' or all dataset columns if keys is empty.
+#' 
+#' @param dataset -- A model output dataset
+#' @param keys -- A list of column names
+#' 
+#' @return A data frame with Coefficient of variations
+#' @export
+AoE.Stability<- function(dataset, keys=c()) {
+  if(length(keys) == 0) {
+    keys<- setdiff(names(dataset), c("pset","random_seed","run","Time"))   
+  }
+  
+  results<- c()
+  for(k in keys) {
+    v<- AoE.ColumnCoV(dataset,k)
+    v$group<- k
+    results<- rbind(results,v)
+  }
+  return(results)
+}
+  
+#' @title AoE.Base
+#' 
+#' @description The Design Of Experiments Base function
+#' 
+#' @param m -- The base design matrix
+#' @param factors -- A subset of model parameters
+#' @param fun -- The function which will be applied to m
+#'
+#' @return The design matrix
+#'
+#' @export
+AoE.Base<- function(m, factors=c(), fun=NULL) {
+  k<- GetFactorsSize(factors)
+  if(k == 0) {
+    stop("Empty factor collection!")
+  }
+  
+  tmp.factors<- factors
+  if(!is.null(fun)) {
+    tmp.factors[,"lambda"]<- fun  
+  }
+  
+  # --- Apply the desired range
+  design<- ApplyFactorRange(m, tmp.factors)
+  return(design)
+}
+
+#' @title AoE.LatinHypercube 
+#' 
+#' @description Generate a LHS sample for model parameters
+#' 
+#' @details Generate the LHS sampling for evaluating 
+#' the parameters of a model.
+#' 
+#' @param n -- The number of samples
+#' @param factors -- The model's parameters which will be evaluated
+#' 
+#' @return The LHS design matrix for provided parameters
+#' 
+#' @examples \dontrun{
+#'  f<- AddFactor(name="cyclePoint",min=40,max=90)
+#'  f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+#'  d<- DoE.LatinHypercube(2,f)}
+#' 
+#' @importFrom lhs randomLHS
+#' @export
+AoE.LatinHypercube<- function(n=10, factors=c()) {
+  k<- GetFactorsSize(factors)
+  
+  # --- Generate design matrix
+  design<- AoE.Base(randomLHS(n, k), factors)
+  return(design)
+}
+
+#' @title AoE.FullFactorial design generator
+#' 
+#' @description Generate a Full Factorial sampling for evaluating 
+#' the parameters of a model.
+#' 
+#' @param n -- The number of samples
+#' @param factors -- The model's parameters which will be evaluated
+#' 
+#' @return The Full Factorial design matrix for provided parameters
+#' 
+#' @examples \dontrun{
+#'  f<- AddFactor(name="cyclePoint",min=40,max=90)
+#'  f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+#'  d<- AoE.FullFactorial(2,f)}
+#' 
+#' @export
+AoE.FullFactorial<- function(n=10, factors=c()) {
+  k<- GetFactorsSize(factors)
+  
+  # --- Generate design matrix
+  design<- AoE.Base(matrix(nrow = n, ncol = k, seq(1,n)), factors, "SequenceItem")
+  design<-  expand.grid(design)
+  return(design)
+}
+
+#' @title AoE.RandomSampling experiment desing generator
+#' 
+#' @description Generate a Simple Random Sampling experiment design
+#' matrix.
+#' 
+#' @param n -- The number of samples
+#' @param factors -- The model's parameters which will be evaluated
+#' 
+#' @return The random sampling design matrix 
+#' 
+#' @examples \dontrun{
+#'  f<- AddFactor(name="cyclePoint",min=40,max=90)
+#'  f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+#'  d<- AoE.RandomSampling(2,f)}
+#' 
+#' @export
+AoE.RandomSampling<- function(n=10, factors=c()) {
+  k<- GetFactorsSize(factors)
+  m<- c()
+  for(i in 1:k) {
+    m<- cbind(m,runif(n))  
+  }
+  design<- AoE.Base(m, factors)
+  return(design)
+}
+
+#' @title AoE.Morris 
+#' 
+#' @description This is a wrapper for performing Morris's  screening
+#' method on repast models. We rely on morris method from sensitivity 
+#' package.
+#' 
+#' @param k -- The factors for morris screening.
+#' @param p -- The number of levels for the model's factors.
+#' @param r -- Repetitions. The number of random sampling points of Morris Method.
+#' 
+#' @references Gilles Pujol, Bertrand Iooss, Alexandre Janon with contributions from Sebastien Da Veiga, Jana Fruth,
+#' Laurent Gilquin, Joseph Guillaume, Loic Le Gratiet, Paul Lemaitre, Bernardo Ramos and Taieb Touati (2015).
+#' sensitivity: Sensitivity Analysis. R package version 1.11.1.
+#' https://CRAN.R-project.org/package=sensitivity
+#' 
+#' @importFrom sensitivity morris
+#' @export
+AoE.Morris<- function(k=c(),p=5,r=4) {
+  
+  k.v<- GetFactorsSize(k)
+  if(k.v == 0) {
+    stop("Empty factor collection!")
+  }
+  
+  p.min<- as.numeric(k[,"min"])
+  p.max<- as.numeric(k[,"max"])
+  p.design<- list(type = "oat", levels = p, grid.jump = ceiling(p/2))  
+  v<- morris(NULL, k[,"name"], r, p.design, p.min, p.max, scale=TRUE)
+  return(v)
+}
+
+#' @title AoE.GetMorrisOutput 
+#' 
+#' @description  Returns a dataframe holding the Morris 
+#' result set
+#' 
+#' @param obj -- A reference to a morris object instance
+#' 
+#' @return The results of Morris method
+#' @importFrom stats sd
+#' @export
+AoE.GetMorrisOutput<- function(obj) {
+  mu <- apply(obj$ee, 2, mean)
+  mu.star <- apply(obj$ee, 2, function(x) mean(abs(x)))
+  sigma <- apply(obj$ee, 2, sd) 
+  m<- t(rbind(mu,mu.star,sigma))
+  tmp<- as.data.frame(m,row.names=seq(1,nrow(m)))
+  tmp$group<- rownames(m)
+  return(tmp)
+}
+
+#' @title AoE.Sobol
+#' 
+#' @description This is a wrapper for performing Global Sensitivity
+#' Analysis using the Sobol Method provided by sensitivity 
+#' package.
+#' 
+#' @details This function is not intended to be used directly from 
+#' user programs.
+#' 
+#' @references Gilles Pujol, Bertrand Iooss, Alexandre Janon with contributions from Sebastien Da Veiga, Jana Fruth,
+#' Laurent Gilquin, Joseph Guillaume, Loic Le Gratiet, Paul Lemaitre, Bernardo Ramos and Taieb Touati (2015).
+#' sensitivity: Sensitivity Analysis. R package version 1.11.1.
+#' https://CRAN.R-project.org/package=sensitivity
+#' 
+#' @param n -- The number of samples
+#' @param factors -- The model's parameters which will be evaluated
+#' @param o -- Maximum order in the ANOVA decomposition
+#' @param nb -- Number of bootstrap replicates
+#' @param fun.doe -- The sampling function to be used for sobol method
+#' @param fun.sobol -- The sobol implementation
+#' 
+#' 
+#' @importFrom sensitivity sobol sobolmartinez
+#' @export
+AoE.Sobol<- function(n=100, factors=c(), o=2, nb=100, fun.doe=AoE.LatinHypercube, fun.sobol=sobolmartinez) {
+  p.x1<- fun.doe(n,factors)
+  p.x2<- fun.doe(n,factors)
+  v<- fun.sobol(model = NULL, X1 = p.x1,X2 = p.x2, order = o, nboot = nb) 
+  return(v)
+}
+  
+##
+## ----- Below Plot functions
+##
+
+#' @title Plot stability of output
+#' 
+#' @description Generate plot for visually access the stability of 
+#' coefficient of variation as function of simulation sample size.
+#' 
+#' @param obj -- An instance of Morris Object \code{\link{AoE.Morris}}
+#' @param title -- Chart title, may be null
+#' 
+#' @return The resulting ggplot2 plot object
+#' 
+#' @importFrom ggplot2 ggplot aes geom_point geom_line ggtitle labs geom_bar geom_errorbar
+#' @export
+Plot.Stability<- function(obj, title= NULL) {
+  
+  if(is.null(obj$RSD)) {
+    stop("Invalid object instance!")
+  }
+  
+  d<- obj
+  
+  p<- ggplot(d, with(d,aes(sample, RSD))) 
+  
+  p<- p + labs(y = expression("RSD"))
+  p<- p + labs(x = expression("sample size"))
+  
+  if(!is.null(title)) {
+    p<- p + ggtitle(title)
+  }
+  
+  p<- p + with(d,aes(shape = group)) 
+  p<- p + geom_line( with(d,aes(colour = group)), size = 1)
+  
+  return(p)
+}
+
+#' @title Plot of Morris output
+#' 
+#' @description Generate plot for Morris's screening method
+#' 
+#' @param obj -- An instance of Morris Object \code{\link{AoE.Morris}}
+#' @param type -- The chart type (mu*sigma|musigma|mu*mu)
+#' @param title -- Chart title, may be null
+#' 
+#' @return The resulting ggplot2 plot object
+#' 
+#' @importFrom ggplot2 ggplot aes geom_point geom_line ggtitle labs geom_bar geom_errorbar
+#' @export
+Plot.Morris<- function(obj, type, title= NULL) {
+  # --- Check if we received a valid morris object
+  if(is.null(obj$call)) {
+    stop("Invalid Morris object instance!")
+  }
+  
+  d<- AoE.GetMorrisOutput(obj)
+  
+  switch(type,
+    "mu*sigma" = { 
+      p<- ggplot(d, with(d,aes(mu.star, sigma)))  
+      p<- p + labs(y = expression(sigma))
+      p<- p + labs(x = expression(paste(mu,"*")))
+    },
+    
+    "musigma" = { 
+      p<- ggplot(d, with(d,aes(mu, sigma)))
+      p<- p + labs(y = expression(sigma))
+      p<- p + labs(x = expression(mu))
+    },
+    
+    "mu*mu" = {
+      p<- ggplot(d, with(d,aes(mu.star, mu)))
+      p<- p + labs(y = expression(mu))
+      p<- p + labs(x = expression(paste(mu,"*")))
+    },
+    
+    stop("Invalid chart type!")
+  )
+  
+  if(!is.null(title)) {
+    p<- p + ggtitle(title)
+  }
+  
+  p<- p + with(d,aes(shape = group)) 
+  p<- p + geom_point( with(d,aes(colour = group)), size = 4)
+  p<- p + geom_point(colour="grey90", size = 1.5)
+  
+  return(p)
+}
+
+#' @title Plot of Sobol output
+#' 
+#' @description Generate plot for Sobol's GSA
+#' 
+#' @param obj -- An instance of Sobol Object \code{\link{AoE.Sobol}}
+#' @param type -- The chart type 
+#' @param title -- Chart title, may be null
+#' 
+#' @return The resulting ggplot2 plot object
+#' 
+#' @importFrom ggplot2 ggplot aes geom_point geom_line ggtitle labs geom_bar geom_errorbar
+#' @export
+Plot.Sobol<- function(obj, type, title= NULL) {
+  # --- Check if we received a valid sobol object
+  if(is.null(obj$S)) {
+    stop("Invalid Sobol object instance!")
+  }
+  
+  switch(type,
+         # --- First order indices
+         "1" = { 
+           d<- obj$S
+           # --- Add the group column based on rownames
+           d$group<- rownames(obj$S)
+           
+           y.label<- labs(y = expression(S[i]))
+         },
+         # --- Totla order indices
+         "2" = { 
+           d<- obj$T
+           # --- Add the group column based on rownames
+           d$group<- rownames(obj$T)
+           
+           y.label<- labs(y = expression(S[Ti]))
+         },
+         
+         stop("Invalid chart type!")
+  )
+  
+  # --- Create plot object
+  p<- ggplot(d, with(d,aes(group,original)))
+  p<- p + y.label
+  p<- p + labs(x = expression(paste("parameter")))
+
+  ## --- p<- p + geom_bar(stat="identity",aes(fill = group))
+  p<- p + geom_bar(stat="identity")
+  p<- p + geom_errorbar( with(d, aes(ymin=`min. c.i.`, ymax=`max. c.i.`)), colour="black", width=.1)
+  
+  print(title)
+  if(!is.null(title)) {
+    print(title)
+    p<- p + ggtitle(title)
+  }
+  
+  return(p)
+}
+  
+##
+## ----- Below Easy Api Methods
+##
+
+#' @title Easy.getChart
+#' 
+#' @description Returns the chart instance
+#' 
+#' @param obj --- A reference to the output of Easy.Stability
+#' @param key --- The param name
+#' 
+#' @return The plot instance
+#' @export
+Easy.getChart<- function(obj, key) {
+  if(is.null(obj$charts)) {
+    stop("Not an instance of Easy API result!")
+  }
+  charts<- obj$charts
+  chart<- charts[charts[,1] ==  key,]
+  return(chart)
+}
+
+#' @title Easy.Calibration
+#' 
+#' @description Search for the best set of parameters trying to 
+#' minimize the calibration function provided by the user. The function 
+#' has to operational models, the first based on the experimental setup 
+#' where all parameters are defined a priori and the second using 
+#' optimization techniques. Currently the only supported optimization 
+#' technique is the particle swarm optimization.
+#' 
+#' @param m.dir The installation directory of some repast model
+#' @param m.ds The name of any model aggregate dataset
+#' @param m.time The total simulated time
+#' @param parameters -- The input factors
+#' @param exp.n -- The experiment sample size
+#' @param exp.r -- The number of experiment replications
+#' @param FUN -- THe calibration function.
+#'
+#' @return A list with holding experimnt, object and charts 
+#' 
+#' @references
+#' [1] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization. 
+#' Swarm Intelligence, 1(1), 33-57. 
+#'  
+#' @export
+Easy.Calibration<- function(m.dir, m.ds, m.time=300, parameters,exp.n = 100, exp.r=1, FUN) {
+  stop("Still under testing, not available yet.")  
+}
+
+#' @title Easy.Setup
+#' 
+#' @description This function configures automatically the simulation 
+#' execution environment including the modification of scenario file 
+#' and the creation of output directory.
+#' 
+#' @param exp.dir The base directory for storing logs and 
+#' simulation datasets, if omited the mdl.dir is used as base diretory 
+#' instead 
+#' @param mdl.dir The installation directory of some repast model
+#' 
+#' @export
+Easy.Setup<- function(exp.dir, mdl.dir){
+  stop("Still under testing, not available yet.")    
+}
+
+#' @title Easy API for output stability
+#' 
+#' @description This functions run model several times in order to determine 
+#' how many experiment replications are required for model's output being stable
+#' (i.e. the convergence of standard deviation)
+#' 
+#' @param m.dir The installation directory of some repast model
+#' @param m.ds The name of any model aggregate dataset
+#' @param m.time The total simulated time
+#' @param parameters -- The factors or model's parameter list
+#' @param sampling -- The number of factor samples.
+#' @param tries -- The number of experiment replications
+#' @param vars -- The model's output variables for compute CoV
+#' @param FUN -- THe calibration function.
+#' 
+#' @return A list with holding experimnt, object and charts 
+#' 
+#' @export
+Easy.Stability<- function(m.dir, m.ds, m.time=300, parameters, sampling=1, tries=100, vars= c(), FUN) {
+  my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
+  Load(my.model)
+
+  ## --- Sample the parameter space
+  sampling<- AoE.RandomSampling(sampling, parameters)
+  
+  ## --- Get the model declared paramters
+  parms<- GetSimulationParameters(my.model)
+  
+  ## --- Build the experimental parameter set
+  exp.design<- BuildParameterSet(sampling, parms)
+  
+  ## --- Run the experimental setup
+  exp<- RunExperiment(my.model,r=tries,exp.design,FUN)
+  
+  ## --- Get the raw data set for evaluate the Coefficient of Variation
+  d<- getExperimentDataset(exp)
+  
+  ## --- Calculate the coefficient of variation
+  rsd<- AoE.Stability(d, vars)
+  
+  charts<- c()
+  for(group in unique(rsd$group)) {
+    chart<- Plot.Stability(rsd[rsd$group == group, ],"Simulation output stability")  
+    charts<- rbind(charts, list(group=group,plot=chart))
+  }
+  
+  if(length(vars) != 0) {
+    chart<- Plot.Stability(rsd,"Simulation output stability")
+    charts<- rbind(charts, list(group="all",plot=chart))
+  }
+  
+  results<- list(experiment=exp, object=rsd, charts=charts)
+  return(results)
+  
+}
+
+#' @title Easy API for Morris's screening method
+#' 
+#' @description This functions wraps all calls to perform Morris method.
+#' 
+#' @param m.dir The installation directory of some repast model
+#' @param m.ds The name of any model aggregate dataset
+#' @param m.time The total simulated time
+#' @param parameters -- The factors for morris screening.
+#' @param mo.p -- The number of levels for the model's factors.
+#' @param mo.r -- Repetitions. The number of random sampling points of Morris Method.
+#' @param exp.r -- The number of experiment replications
+#' @param FUN -- The calibration function.
+#' 
+#' @return A list with holding experimnt, object and charts 
+#' 
+#' @importFrom sensitivity tell
+#' 
+#' @export
+Easy.Morris<- function(m.dir, m.ds, m.time=300, parameters, mo.p, mo.r, exp.r, FUN) {
+  my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
+  Load(my.model)
+  
+  ## --- Create Morris object
+  v.morris<- AoE.Morris(parameters,p=mo.p,r=mo.r)
+  
+  ## --- Get the model declared paramters
+  parms<- GetSimulationParameters(my.model)
+  
+  ## --- Build the experimental parameter set
+  exp.design<- BuildParameterSet(v.morris$X,parms)
+  
+  ## --- Run the experimental setup
+  exp<- RunExperiment(my.model,r=exp.r,exp.design,FUN)
+  
+  charts<- c()
+  o<- getExperimentOutput(exp)
+  for(k in colnames(o)) {
+    if(k != "pset") {
+      m<- t(DFToMatrix(getExperimentOutput(exp),c(k)))
+      tell(v.morris,m)
+      
+      ## --- Plot Morris output
+      mustar<- Plot.Morris(v.morris,"mu*sigma", paste("criteria",k))
+      musigma<- Plot.Morris(v.morris,"musigma", paste("criteria",k))
+      mumu<- Plot.Morris(v.morris,"mu*mu", paste("criteria",k))
+      charts<- rbind(charts,list(mu.star=mustar,mu=musigma,mumu=mumu))
+    } 
+    results<- list(experiment=exp, object=v.morris, charts=charts)
+  }
+  return(results)
+}
+
+#' @title Easy API for Sobol's SA method
+#' 
+#' @description This functions wraps all required calls to perform 
+#' Sobol method for global sensitivity analysis.
+#' 
+#' @param m.dir The installation directory of some repast model
+#' @param m.ds The name of any model aggregate dataset
+#' @param m.time The total simulated time
+#' @param parameters -- The input factors
+#' @param exp.n -- The experiment sample size
+#' @param exp.r -- The number of experiment replications
+#' @param FUN -- THe calibration function.
+#' 
+#' @return A list with holding experimnt, object and charts 
+#' 
+#' @importFrom sensitivity tell
+#' 
+#' @export
+Easy.Sobol<- function(m.dir, m.ds, m.time=300, parameters,exp.n = 100, exp.r=1, FUN) {
+  ## --- Instantiate the model
+  my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
+  Load(my.model)
+  
+  ## --- Get the model declared paramters
+  parms<- GetSimulationParameters(my.model)
+  
+  ## --- Create a Sobol object
+  my.obj<- AoE.Sobol(n= exp.n, parameters)
+  
+  # Build the experimental parameter set
+  exp.design<- BuildParameterSet(my.obj$X,parms)
+  
+  ## --- Run the experimental setup
+  exp<- RunExperiment(my.model,r=exp.r,exp.design,FUN)
+  
+  charts<- c()
+  o<- getExperimentOutput(exp)
+  for(k in colnames(o)) {
+    if(k != "pset") {
+      m<- t(DFToMatrix(getExperimentOutput(exp),c(k)))
+      tell(my.obj,m)
+      
+      # -- First order indexes
+      chart_0<- Plot.Sobol(my.obj, 1, paste("Sobol indexes for", k))
+      
+      # -- Total order indexes
+      chart_1<- Plot.Sobol(my.obj, 2, paste("Sobol indexes for", k))
+      
+      charts<- rbind(charts,list(chart=chart_0))
+      charts<- rbind(charts,list(chart=chart_1))
+    } 
+    results<- list(experiment=exp, object=my.obj, charts=charts)
+  }
+  
+  return(results)
+}

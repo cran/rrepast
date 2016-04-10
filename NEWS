@@ -1,0 +1,46 @@
+# Change Log
+This project adheres to [Semantic Versioning](http://semver.org/).
+
+## [Unreleased]
+### Added
+- Easy.Calibration
+- AoA.PSO function for Particle Swarm parameter estimation (model calibration)
+- AoA.ACO function for Ant Colony parameter estimation (model calibration)
+- Setup.Model function for automatic configuration of model
+
+### Changed
+- Run models from Repast source directory
+
+## R/Repast [0.4.0] - 2016-04-10
+### Added
+- The NEWS changelog file
+- jvm.setOut Send the JVM System.out to a file
+- jvm.resetOut Send the JVM System.out to R console
+- getExperimentParamSet
+- getExperimentOutput
+- getExperimentDataset
+- DFToMatrix
+- PB.* Functions for show a progress bar functions during model run
+- AoE.RMSD A Root Mean Square Deviation function
+- AoE.CoV
+- AoE.ColumnCoV
+- AoE.Stability
+- AoE.RandomSampling function for DoE
+- AoE.LatinHypercube function for DoE
+- AoE.FullFactorial function for DoE
+- AoE.Morris function for SA screening
+- AoE.GetMorrisOutput wrapper for access list members of Morris output
+- AoE.Sobol function for variance decomposition GSA
+- Plot.Stability Plot stability chart
+- Plot.Morris function for ploting Morris's screening output
+- PLot.Sobol function for ploting Sobol output
+- Easy.Stability function for determine the number of simulations
+- Easy.Morris function for Morris's screening in one call
+- Easy.Sobol Function for Sobol sensitivity analysis
+
+### Changed
+- LatinHypercube Renamed function LatinHypercube to AoE.LatinHypercube
+
+### Fixed
+- Fixed dir.exists missing in R version < 3.2
+- Engine.setParameter: Coercing parameters types to model types

@@ -15,6 +15,9 @@ RunExperiment(e, r = 1, design, FUN)
 
 \item{FUN}{-- THe calibration function.}
 }
+\value{
+A list with output and dataset
+}
 \description{
 Run the model multiple times for different parameters
 given by design matrix function parameter.
@@ -22,5 +25,19 @@ given by design matrix function parameter.
 \details{
 The FUN function must return zero for perfect fit and values 
 greater than zero otherwise.
+}
+\examples{
+\dontrun{
+   my.cost<- function(params, results) { # your best fit calculation, being 0 the best metric.  }
+   d<- "c:/usr/models/your-model-directory"
+   m<- Model(d,dataset="ds::Output")
+   Load(m)
+   f<- AddFactor(name="cyclePoint",min=40,max=90)
+   f<- AddFactor(factors=f, name="conjugationCost",min=1,max=80)
+   d<- LatinHypercube(factors=f)
+   p<- GetSimulationParameters(e)
+   exp.design<- BuildParameterSet(d,p)
+   v<- RunExperiment(e,r=1,exp.design,my.cost) }
+   
 }
 

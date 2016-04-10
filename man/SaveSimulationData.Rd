@@ -4,13 +4,22 @@
 \alias{SaveSimulationData}
 \title{Saving simulation output}
 \usage{
-SaveSimulationData(as = "csv")
+SaveSimulationData(as = "csv", experiment = NULL)
 }
 \arguments{
 \item{as}{The desired output type, must be csv or xls}
+
+\item{experiment}{The experiment output}
+}
+\value{
+The id of saved data
 }
 \description{
 Saves the simulation results of last call to Run(e)
 function.
+}
+\details{
+The model must have been initialized or user must call 
+\code{setId} explicitelly.
 }
 

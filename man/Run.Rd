@@ -11,7 +11,7 @@ Run(e, r = 1, seed = c())
 
 \item{r}{-- The number of experiment replications}
 
-\item{seed}{- The random seed collection}
+\item{seed}{-- The random seed collection}
 }
 \description{
 This function executes the time steps of an 
