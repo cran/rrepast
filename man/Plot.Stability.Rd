@@ -7,9 +7,9 @@
 Plot.Stability(obj, title = NULL)
 }
 \arguments{
-\item{obj}{-- An instance of Morris Object \code{\link{AoE.Morris}}}
+\item{obj}{An instance of Morris Object \code{\link{AoE.Morris}}}
 
-\item{title}{-- Chart title, may be null}
+\item{title}{Chart title, may be null}
 }
 \value{
 The resulting ggplot2 plot object

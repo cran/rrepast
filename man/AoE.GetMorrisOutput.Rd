@@ -7,7 +7,7 @@
 AoE.GetMorrisOutput(obj)
 }
 \arguments{
-\item{obj}{-- A reference to a morris object instance}
+\item{obj}{A reference to a morris object instance}
 }
 \value{
 The results of Morris method

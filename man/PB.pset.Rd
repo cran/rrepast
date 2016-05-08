@@ -7,7 +7,7 @@
 PB.pset(v)
 }
 \arguments{
-\item{v}{-- The current parameter set being simulated}
+\item{v}{The current parameter set being simulated}
 }
 \description{
 Update pset value

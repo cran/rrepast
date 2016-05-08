@@ -3,13 +3,37 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
-- Easy.Calibration
-- AoA.PSO function for Particle Swarm parameter estimation (model calibration)
-- AoA.ACO function for Ant Colony parameter estimation (model calibration)
-- Setup.Model function for automatic configuration of model
+- config.scenario Add the rrepast integration to the scenario file
+- config.copylib Copy the required lib to the Repast model classpath
+- config.check Check if Repast model is configured for rrepast
+
 
 ### Changed
 - Run models from Repast source directory
+- Easy.Setup Add an option to configure model file and copy jars
+
+## R/Repast [0.5.0] - 2016-05-08
+### Added
+- Easy.Setup Experiment initialization 
+- Easy.Calibration Find the best set of paramters for the model
+- Plot.Calibration Plot results of calibration process
+- AoE.NRMSD Calculates the Normalized Root-Mean-Square 
+- AoE.MAE Calculates the average-error magnitude
+- simple.fitting Simple calibration method based on experimental setup
+- filterby Selects a subset of a data frame
+- col.sum Sum dataset columns 
+- pick.fittest Choose the best solutions 
+- dfround Round dataframe columns
+- Results.GetExperiment
+- Results.GetObject
+- Results.GetCharts
+- Calibration.GetMemberKeys
+- Calibration.GetMemberList
+
+### Changed
+
+### Fixed
+- PB.update Failed to update progress bar correctelly when replication > 1
 
 ## R/Repast [0.4.0] - 2016-04-10
 ### Added
@@ -19,7 +43,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - getExperimentParamSet
 - getExperimentOutput
 - getExperimentDataset
-- DFToMatrix
+- DFToMatrix 
 - PB.* Functions for show a progress bar functions during model run
 - AoE.RMSD A Root Mean Square Deviation function
 - AoE.CoV

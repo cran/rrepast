@@ -7,7 +7,7 @@
 GetOutput(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \value{
 Returns a data.frame with output data

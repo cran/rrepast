@@ -8,17 +8,17 @@ AoE.Sobol(n = 100, factors = c(), o = 2, nb = 100,
   fun.doe = AoE.LatinHypercube, fun.sobol = sobolmartinez)
 }
 \arguments{
-\item{n}{-- The number of samples}
+\item{n}{The number of samples}
 
-\item{factors}{-- The model's parameters which will be evaluated}
+\item{factors}{The model's parameters which will be evaluated}
 
-\item{o}{-- Maximum order in the ANOVA decomposition}
+\item{o}{Maximum order in the ANOVA decomposition}
 
-\item{nb}{-- Number of bootstrap replicates}
+\item{nb}{Number of bootstrap replicates}
 
-\item{fun.doe}{-- The sampling function to be used for sobol method}
+\item{fun.doe}{The sampling function to be used for sobol method}
 
-\item{fun.sobol}{-- The sobol implementation}
+\item{fun.sobol}{The sobol implementation}
 }
 \description{
 This is a wrapper for performing Global Sensitivity

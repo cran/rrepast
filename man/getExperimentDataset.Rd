@@ -7,7 +7,7 @@
 getExperimentDataset(e)
 }
 \arguments{
-\item{e}{-- The experiement object returned by \code{\link{RunExperiment}}}
+\item{e}{The experiement object returned by \code{\link{RunExperiment}}}
 }
 \value{
 The reference to \code{dataset} container.

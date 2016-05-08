@@ -7,7 +7,7 @@
 PB.update(r)
 }
 \arguments{
-\item{r}{-- The current replication number}
+\item{r}{The current replication number}
 }
 \description{
 Update progress bar

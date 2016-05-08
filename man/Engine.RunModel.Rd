@@ -2,14 +2,14 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.RunModel}
 \alias{Engine.RunModel}
-\title{Run the model}
+\title{Engine.RunModel}
 \usage{
 Engine.RunModel(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \description{
-Run the model
+Performs the execution of Repast model
 }
 

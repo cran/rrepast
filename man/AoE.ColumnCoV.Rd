@@ -7,9 +7,9 @@
 AoE.ColumnCoV(dataset, key)
 }
 \arguments{
-\item{dataset}{-- A model output dataset}
+\item{dataset}{A model output dataset}
 
-\item{key}{-- Column name from output dataset}
+\item{key}{Column name from output dataset}
 }
 \value{
 A data frame with Coefficient of variations

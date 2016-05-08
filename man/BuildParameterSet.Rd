@@ -7,9 +7,9 @@
 BuildParameterSet(design, parameters)
 }
 \arguments{
-\item{design}{-- The experimental desing matrix for at least one factor}
+\item{design}{The experimental desing matrix for at least one factor}
 
-\item{parameters}{-- All parameters of the repast model.}
+\item{parameters}{All parameters of the repast model.}
 }
 \value{
 A data frame holding all parameters required for running the model

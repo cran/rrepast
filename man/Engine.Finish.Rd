@@ -2,14 +2,15 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.Finish}
 \alias{Engine.Finish}
-\title{Performs a cleanup on engine instance.}
+\title{Engine.Finish}
 \usage{
 Engine.Finish(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \description{
-Finalize and destroy repast controller data.
+Performs a cleanup on a engine instance.Finalize 
+and destroy repast controller data.
 }
 

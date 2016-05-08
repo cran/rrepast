@@ -2,14 +2,17 @@
 % Please edit documentation in R/RRepast.R
 \name{jvm.set_parameters}
 \alias{jvm.set_parameters}
-\title{Configures the jvm parameters}
+\title{jvm.set_parameters}
 \usage{
 jvm.set_parameters(s)
 }
 \arguments{
-\item{s}{-- The paramter string to be passed to the underlying JVM}
+\item{s}{The paramter string to be passed to the underlying JVM}
 }
 \description{
+Configures the jvm parameters
+}
+\details{
 Set the underlying parameters for java virtual machine. The default 
 values are "-server -Xms512m -Xmx1024m". These defaults can be changed 
 to fit the model requirements.

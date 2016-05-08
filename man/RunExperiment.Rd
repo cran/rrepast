@@ -7,13 +7,13 @@
 RunExperiment(e, r = 1, design, FUN)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{r}{-- The number of experiment replications}
+\item{r}{The number of experiment replications}
 
-\item{design}{-- The desing matrix holding parameter sampling}
+\item{design}{The desing matrix holding parameter sampling}
 
-\item{FUN}{-- THe calibration function.}
+\item{FUN}{THe calibration function.}
 }
 \value{
 A list with output and dataset

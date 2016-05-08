@@ -7,9 +7,9 @@
 AoE.FullFactorial(n = 10, factors = c())
 }
 \arguments{
-\item{n}{-- The number of samples}
+\item{n}{The number of samples}
 
-\item{factors}{-- The model's parameters which will be evaluated}
+\item{factors}{The model's parameters which will be evaluated}
 }
 \value{
 The Full Factorial design matrix for provided parameters

@@ -7,7 +7,7 @@
 setOutputDir(s)
 }
 \arguments{
-\item{s}{-- The full path for output directory}
+\item{s}{The full path for output directory}
 }
 \description{
 Configure the desired directoy to save model 

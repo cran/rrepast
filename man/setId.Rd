@@ -7,7 +7,7 @@
 setId(s)
 }
 \arguments{
-\item{s}{-- The model name}
+\item{s}{The model name}
 }
 \description{
 Set the name of the model currently instantiated.

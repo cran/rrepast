@@ -2,14 +2,20 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.getParameterNames}
 \alias{Engine.getParameterNames}
-\title{Parameter names}
+\title{Engine.getParameterNames}
 \usage{
 Engine.getParameterNames(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
+}
+\value{
+A collection of parameter names
 }
 \description{
+Get the parameter names
+}
+\details{
 Returns the names of all declared model's parameters in
 the parameter.xml file in the scenario directory.
 }

@@ -7,11 +7,11 @@
 SetSimulationParameter(e, key, value)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{key}{-- The paramter name}
+\item{key}{The paramter name}
 
-\item{value}{-- The parameter value}
+\item{value}{The parameter value}
 }
 \description{
 Modify model's default parameter collection

@@ -5,7 +5,7 @@
 \title{Easy.Calibration}
 \usage{
 Easy.Calibration(m.dir, m.ds, m.time = 300, parameters, exp.n = 100,
-  exp.r = 1, FUN)
+  exp.r = 1, smax = 4, design = "lhs", FUN)
 }
 \arguments{
 \item{m.dir}{The installation directory of some repast model}
@@ -14,16 +14,20 @@ Easy.Calibration(m.dir, m.ds, m.time = 300, parameters, exp.n = 100,
 
 \item{m.time}{The total simulated time}
 
-\item{parameters}{-- The input factors}
+\item{parameters}{The input factors}
 
-\item{exp.n}{-- The experiment sample size}
+\item{exp.n}{The experiment sample size}
 
-\item{exp.r}{-- The number of experiment replications}
+\item{exp.r}{The number of experiment replications}
 
-\item{FUN}{-- THe calibration function.}
+\item{smax}{The number of solutions to be generated}
+
+\item{design}{The sampling scheme ["lhs"|"mcs"|"ffs"]}
+
+\item{FUN}{The calibration function.}
 }
 \value{
-A list with holding experimnt, object and charts
+A list with holding experiment, object and charts
 }
 \description{
 Search for the best set of parameters trying to 
@@ -33,8 +37,23 @@ where all parameters are defined a priori and the second using
 optimization techniques. Currently the only supported optimization 
 technique is the particle swarm optimization.
 }
-\references{
-[1] Poli, R., Kennedy, J., & Blackwell, T. (2007). Particle swarm optimization. 
-Swarm Intelligence, 1(1), 33-57.
+\examples{
+\dontrun{
+ my.cost<- function(params, results) {
+   criteria<- c()
+   Rate<- AoE.RMSD(results$X.Simulated,results$X.Experimental)
+   G<- AoE.RMSD(results$G.T.,52)
+   total<- Rate + G
+   criteria<- cbind(total,Rate,G)
+   return(criteria)
+ }
+ 
+ Easy.Setup("/models/BactoSim")
+ v<- Easy.Calibration("/models/BactoSim","ds::Output",360,
+                       f,exp.n = 1000, exp.r=1, smax=4, 
+                       design="mcs", my.cost)
+ 
+}
+
 }
 

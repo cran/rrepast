@@ -2,16 +2,19 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.getParameterAsDouble}
 \alias{Engine.getParameterAsDouble}
-\title{Get the value of model parameter s as java.lang.Double}
+\title{Engine.getParameterAsDouble}
 \usage{
 Engine.getParameterAsDouble(e, k)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The parameter name}
+\item{k}{The parameter name}
+}
+\value{
+The parmeter value as double
 }
 \description{
-Get the value of model parameter s as java.lang.Double
+Get the value of model parameter \code{k} as \code{java.lang.Double}
 }
 

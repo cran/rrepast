@@ -7,7 +7,7 @@
 AoE.CoV(d)
 }
 \arguments{
-\item{d}{--- The data collection}
+\item{d}{The data collection}
 }
 \value{
 The coefficient of variation for data

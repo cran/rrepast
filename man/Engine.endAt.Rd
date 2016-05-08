@@ -2,16 +2,17 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.endAt}
 \alias{Engine.endAt}
-\title{Configure the maximun simulated time for the current model run}
+\title{Engine.endAt}
 \usage{
 Engine.endAt(e, v)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{v}{-- The number of time ticks}
+\item{v}{The number of Repast time ticks}
 }
 \description{
-Configure the maximun simulated time for the current model run
+Configure the maximun simulated time for 
+the current model run
 }
 

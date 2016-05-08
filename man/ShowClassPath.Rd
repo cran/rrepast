@@ -2,15 +2,19 @@
 % Please edit documentation in R/RRepast.R
 \name{ShowClassPath}
 \alias{ShowClassPath}
-\title{Java Classpath}
+\title{ShowClassPath}
 \usage{
 ShowClassPath()
 }
+\value{
+the current setting of JVM classpath
+}
 \description{
-Returns the current setting of JVM classpath
+Shows the current classpath
 }
 \examples{
 \dontrun{
    ShowClassPath()}
+   
 }
 

@@ -4,8 +4,8 @@
 \alias{Easy.Sobol}
 \title{Easy API for Sobol's SA method}
 \usage{
-Easy.Sobol(m.dir, m.ds, m.time = 300, parameters, exp.n = 100, exp.r = 1,
-  FUN)
+Easy.Sobol(m.dir, m.ds, m.time = 300, parameters, exp.n = 500,
+  bs.size = 200, exp.r = 1, FUN)
 }
 \arguments{
 \item{m.dir}{The installation directory of some repast model}
@@ -14,13 +14,15 @@ Easy.Sobol(m.dir, m.ds, m.time = 300, parameters, exp.n = 100, exp.r = 1,
 
 \item{m.time}{The total simulated time}
 
-\item{parameters}{-- The input factors}
+\item{parameters}{The input factors}
 
-\item{exp.n}{-- The experiment sample size}
+\item{exp.n}{The experiment sample size}
 
-\item{exp.r}{-- The number of experiment replications}
+\item{bs.size}{The bootstrap sample size for sobol method}
 
-\item{FUN}{-- THe calibration function.}
+\item{exp.r}{The number of experiment replications}
+
+\item{FUN}{The calibration function.}
 }
 \value{
 A list with holding experimnt, object and charts

@@ -7,7 +7,7 @@
 setKeyRandom(k)
 }
 \arguments{
-\item{k}{-- The string with an alternative name for randomSeed}
+\item{k}{The string with an alternative name for randomSeed}
 }
 \description{
 Configures a non-default value for Repast randomSeed

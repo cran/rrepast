@@ -2,19 +2,20 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.getParameterType}
 \alias{Engine.getParameterType}
-\title{Get the type of a model parameter}
+\title{Engine.getParameterType}
 \usage{
 Engine.getParameterType(e, k)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The parameter name}
+\item{k}{The parameter name}
 }
 \value{
-The paramter type
+The parameter type string
 }
 \description{
-Get the type of a model parameter
+Returns the declared type of a Repast 
+model parameter
 }
 

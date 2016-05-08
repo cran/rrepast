@@ -7,7 +7,7 @@
 SetResultsParameters(d)
 }
 \arguments{
-\item{d}{-- A data.frame with parameter values}
+\item{d}{A data.frame with parameter values}
 }
 \description{
 Save the current set of paramters used 

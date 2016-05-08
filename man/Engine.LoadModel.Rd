@@ -2,16 +2,19 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.LoadModel}
 \alias{Engine.LoadModel}
-\title{Loads the scenario files}
+\title{Engine.LoadModel}
 \usage{
 Engine.LoadModel(e, f)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{f}{-- The full path of scenario directory}
+\item{f}{The full path of scenario directory}
 }
 \description{
+Loads the model's scenario files
+}
+\details{
 This function loads the scenario of a Repast Model and 
 initialize de model.
 }

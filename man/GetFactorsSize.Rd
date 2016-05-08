@@ -7,7 +7,7 @@
 GetFactorsSize(factors)
 }
 \arguments{
-\item{factors}{-- A collection of factors created with AddFactor}
+\item{factors}{A collection of factors created with AddFactor}
 }
 \value{
 The number of parameters in factors collection

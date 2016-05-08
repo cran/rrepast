@@ -7,9 +7,9 @@
 ApplyFactorRange(design, factors)
 }
 \arguments{
-\item{design}{-- The LHS design matrix}
+\item{design}{The LHS design matrix}
 
-\item{factors}{-- THe collection of factors}
+\item{factors}{THe collection of factors}
 }
 \value{
 The corrected design matrix

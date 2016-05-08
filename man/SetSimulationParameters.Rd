@@ -7,9 +7,9 @@
 SetSimulationParameters(e, p)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{p}{-- A data frame with simulation parameters}
+\item{p}{A data frame with simulation parameters}
 }
 \description{
 Modify the repast model parameters with 

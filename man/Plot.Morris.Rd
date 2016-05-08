@@ -7,11 +7,11 @@
 Plot.Morris(obj, type, title = NULL)
 }
 \arguments{
-\item{obj}{-- An instance of Morris Object \code{\link{AoE.Morris}}}
+\item{obj}{An instance of Morris Object \code{\link{AoE.Morris}}}
 
-\item{type}{-- The chart type (mu*sigma|musigma|mu*mu)}
+\item{type}{The chart type (mu*sigma|musigma|mu*mu)}
 
-\item{title}{-- Chart title, may be null}
+\item{title}{Chart title, may be null}
 }
 \value{
 The resulting ggplot2 plot object

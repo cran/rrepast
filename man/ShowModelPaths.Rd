@@ -2,17 +2,20 @@
 % Please edit documentation in R/RRepast.R
 \name{ShowModelPaths}
 \alias{ShowModelPaths}
-\title{Prints the paths}
+\title{ShowModelPaths}
 \usage{
 ShowModelPaths()
 }
 \description{
-Shows the directories currently used to load model scenario and lib. 
-This function is informational only and can be used to check whether 
-model data is being loaded properly from correct locations.
+Prints the paths. Shows the directories 
+currently used to load model scenario and lib. The output of 
+this function is informational only and can be used to check 
+whether model data is being loaded properly from 
+correct locations.
 }
 \examples{
 \dontrun{
    ShowModelPaths()}
+   
 }
 

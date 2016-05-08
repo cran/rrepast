@@ -7,11 +7,11 @@
 Plot.Sobol(obj, type, title = NULL)
 }
 \arguments{
-\item{obj}{-- An instance of Sobol Object \code{\link{AoE.Sobol}}}
+\item{obj}{An instance of Sobol Object \code{\link{AoE.Sobol}}}
 
-\item{type}{-- The chart type}
+\item{type}{The chart type}
 
-\item{title}{-- Chart title, may be null}
+\item{title}{Chart title, may be null}
 }
 \value{
 The resulting ggplot2 plot object

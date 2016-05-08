@@ -7,11 +7,11 @@
 SequenceItem(v, min, max)
 }
 \arguments{
-\item{v}{-- A column of n x k design matrix}
+\item{v}{A column of n x k design matrix}
 
-\item{min}{-- The lower boundary of range}
+\item{min}{The lower boundary of range}
 
-\item{max}{-- The uper boundary of range}
+\item{max}{The uper boundary of range}
 }
 \value{
 A sequence between min and max value

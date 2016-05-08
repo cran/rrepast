@@ -7,9 +7,9 @@
 AoE.Stability(dataset, keys = c())
 }
 \arguments{
-\item{dataset}{-- A model output dataset}
+\item{dataset}{A model output dataset}
 
-\item{keys}{-- A list of column names}
+\item{keys}{A list of column names}
 }
 \value{
 A data frame with Coefficient of variations

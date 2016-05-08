@@ -4,7 +4,7 @@
 \alias{Easy.Stability}
 \title{Easy API for output stability}
 \usage{
-Easy.Stability(m.dir, m.ds, m.time = 300, parameters, sampling = 1,
+Easy.Stability(m.dir, m.ds, m.time = 300, parameters, samples = 1,
   tries = 100, vars = c(), FUN)
 }
 \arguments{
@@ -14,15 +14,15 @@ Easy.Stability(m.dir, m.ds, m.time = 300, parameters, sampling = 1,
 
 \item{m.time}{The total simulated time}
 
-\item{parameters}{-- The factors or model's parameter list}
+\item{parameters}{The factors or model's parameter list}
 
-\item{sampling}{-- The number of factor samples.}
+\item{samples}{The number of factor samples.}
 
-\item{tries}{-- The number of experiment replications}
+\item{tries}{The number of experiment replications}
 
-\item{vars}{-- The model's output variables for compute CoV}
+\item{vars}{The model's output variables for compute CoV}
 
-\item{FUN}{-- THe calibration function.}
+\item{FUN}{The calibration function.}
 }
 \value{
 A list with holding experimnt, object and charts

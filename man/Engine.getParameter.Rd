@@ -2,19 +2,20 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.getParameter}
 \alias{Engine.getParameter}
-\title{Get the value of model parameter s as java.lang.Object}
+\title{Engine.getParameter}
 \usage{
 Engine.getParameter(e, k)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The parameter name}
+\item{k}{The parameter name}
 }
 \value{
 The parameter value
 }
 \description{
-Get the value of model parameter s as java.lang.Object
+The function gets the value of model 
+parameter \code{k} as java.lang.Object
 }
 

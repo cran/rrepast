@@ -7,9 +7,9 @@
 AoE.LatinHypercube(n = 10, factors = c())
 }
 \arguments{
-\item{n}{-- The number of samples}
+\item{n}{The number of samples}
 
-\item{factors}{-- The model's parameters which will be evaluated}
+\item{factors}{The model's parameters which will be evaluated}
 }
 \value{
 The LHS design matrix for provided parameters

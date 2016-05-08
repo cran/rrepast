@@ -2,16 +2,19 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.SetAggregateDataSet}
 \alias{Engine.SetAggregateDataSet}
-\title{Sets the model's dataset}
+\title{Engine.SetAggregateDataSet}
 \usage{
 Engine.SetAggregateDataSet(e, k)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The repast model's data set name}
+\item{k}{The repast model's data set name}
 }
 \description{
+Sets the model's dataset
+}
+\details{
 Configure a dataset with the desired output values 
 to be "drained" by the function Engine.GetModelOutput.
 }
@@ -20,5 +23,6 @@ to be "drained" by the function Engine.GetModelOutput.
    d<- "C:/usr/models/your-model-directory"
    m<- Model(d)
    setAggregateDataSet(m,"dataset-name")}
+   
 }
 

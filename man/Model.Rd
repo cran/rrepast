@@ -13,7 +13,7 @@ Model(modeldir = "", maxtime = 300, dataset = "none", load = FALSE)
 
 \item{dataset}{The name of any model aggregate dataset}
 
-\item{load}{--- If true instantiate model and load scenario}
+\item{load}{If true instantiate model and load scenario}
 }
 \value{
 Returns the instance of repast model

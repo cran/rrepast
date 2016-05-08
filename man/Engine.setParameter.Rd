@@ -2,16 +2,16 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.setParameter}
 \alias{Engine.setParameter}
-\title{Set the value of model parameter}
+\title{Engine.setParameter}
 \usage{
 Engine.setParameter(e, k, v)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The parameter name}
+\item{k}{The parameter name}
 
-\item{v}{-- The parameter value}
+\item{v}{The parameter value}
 }
 \description{
 Set the value of model parameter

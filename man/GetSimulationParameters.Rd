@@ -7,7 +7,7 @@
 GetSimulationParameters(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \value{
 A data frame with simulation parameters

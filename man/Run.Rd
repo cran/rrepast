@@ -7,11 +7,14 @@
 Run(e, r = 1, seed = c())
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{r}{-- The number of experiment replications}
+\item{r}{The number of experiment replications}
 
-\item{seed}{-- The random seed collection}
+\item{seed}{The random seed collection}
+}
+\value{
+The model output dataset
 }
 \description{
 This function executes the time steps of an 
@@ -19,7 +22,7 @@ instantiated model. The number of replications of model
 runs can be specified by the function parameter. The seed 
 parameter may be omitted and will be generated internally. 
 If provided, the seed collection, must contain the same 
-number of 'r' parameter.
+number of \code{r} parameter.
 }
 \examples{
 \dontrun{

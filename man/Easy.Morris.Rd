@@ -13,15 +13,15 @@ Easy.Morris(m.dir, m.ds, m.time = 300, parameters, mo.p, mo.r, exp.r, FUN)
 
 \item{m.time}{The total simulated time}
 
-\item{parameters}{-- The factors for morris screening.}
+\item{parameters}{The factors for morris screening.}
 
-\item{mo.p}{-- The number of levels for the model's factors.}
+\item{mo.p}{The number of levels for the model's factors.}
 
-\item{mo.r}{-- Repetitions. The number of random sampling points of Morris Method.}
+\item{mo.r}{Repetitions. The number of random sampling points of Morris Method.}
 
-\item{exp.r}{-- The number of experiment replications}
+\item{exp.r}{The number of experiment replications}
 
-\item{FUN}{-- The calibration function.}
+\item{FUN}{The calibration function.}
 }
 \value{
 A list with holding experimnt, object and charts

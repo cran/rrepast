@@ -7,7 +7,7 @@
 Engine.getId(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \description{
 This function provides a wrapper to the method getId() 

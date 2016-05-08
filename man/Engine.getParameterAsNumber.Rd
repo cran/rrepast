@@ -2,16 +2,20 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine.getParameterAsNumber}
 \alias{Engine.getParameterAsNumber}
-\title{Get the value of model parameter s as java.lang.Number}
+\title{Engine.getParameterAsNumber}
 \usage{
 Engine.getParameterAsNumber(e, k)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 
-\item{k}{-- The parameter name}
+\item{k}{The parameter name}
+}
+\value{
+The parmeter value as number
 }
 \description{
-Get the value of model parameter s as java.lang.Number
+Get the value of model parameter 
+\code{k} as \code{java.lang.Number}
 }
 

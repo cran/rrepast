@@ -7,7 +7,7 @@
 Load(e)
 }
 \arguments{
-\item{e}{-- An engine object instance}
+\item{e}{An engine object instance}
 }
 \description{
 Loads the model's scenario. This function must be 

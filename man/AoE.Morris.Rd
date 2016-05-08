@@ -7,11 +7,11 @@
 AoE.Morris(k = c(), p = 5, r = 4)
 }
 \arguments{
-\item{k}{-- The factors for morris screening.}
+\item{k}{The factors for morris screening.}
 
-\item{p}{-- The number of levels for the model's factors.}
+\item{p}{The number of levels for the model's factors.}
 
-\item{r}{-- Repetitions. The number of random sampling points of Morris Method.}
+\item{r}{Repetitions. The number of random sampling points of Morris Method.}
 }
 \description{
 This is a wrapper for performing Morris's  screening

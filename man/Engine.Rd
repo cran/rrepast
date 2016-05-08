@@ -2,7 +2,7 @@
 % Please edit documentation in R/RRepast.R
 \name{Engine}
 \alias{Engine}
-\title{Creates an instance of Engine}
+\title{Engine}
 \usage{
 Engine()
 }
@@ -10,6 +10,9 @@ Engine()
 An onject instance of Engine class
 }
 \description{
+Creates an instance of Engine
+}
+\details{
 This function creates an instance of Repast model wrapper 
 class. Before invoking the function Engine, make sure that 
 environment was correctly initialized.

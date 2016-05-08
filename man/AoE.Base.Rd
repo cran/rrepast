@@ -7,11 +7,11 @@
 AoE.Base(m, factors = c(), fun = NULL)
 }
 \arguments{
-\item{m}{-- The base design matrix}
+\item{m}{The base design matrix}
 
-\item{factors}{-- A subset of model parameters}
+\item{factors}{A subset of model parameters}
 
-\item{fun}{-- The function which will be applied to m}
+\item{fun}{The function which will be applied to m}
 }
 \value{
 The design matrix

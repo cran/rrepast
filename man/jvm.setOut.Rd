@@ -7,7 +7,7 @@
 jvm.setOut(f)
 }
 \arguments{
-\item{f}{--- The file name}
+\item{f}{The output file name}
 }
 \description{
 Set the System.out filed to a file

@@ -2,7 +2,7 @@
 % Please edit documentation in R/RRepast.R
 \name{jvm.get_parameters}
 \alias{jvm.get_parameters}
-\title{Gets the current java virtual machine parameters}
+\title{jvm.get_parameters}
 \usage{
 jvm.get_parameters()
 }
@@ -10,6 +10,6 @@ jvm.get_parameters()
 A string with JVM parameters.
 }
 \description{
-Gets the current java virtual machine parameters
+Returns the current java virtual machine parameters
 }
 

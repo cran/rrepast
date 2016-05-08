@@ -7,9 +7,9 @@
 Easy.getChart(obj, key)
 }
 \arguments{
-\item{obj}{--- A reference to the output of Easy.Stability}
+\item{obj}{A reference to the output of Easy.Stability}
 
-\item{key}{--- The param name}
+\item{key}{The param name}
 }
 \value{
 The plot instance
