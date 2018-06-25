@@ -81,6 +81,8 @@ jarfile<- function(fjar) {
 #'
 #' @param modelpath The path where model is installed
 #' @param uninstall If TRUE restore original scenario.xml file
+#' 
+#' @return A logical TRUE if the model's scenario file has been modified
 #'
 #' @export
 config.scenario<- function(modelpath, uninstall=FALSE) {
@@ -95,14 +97,15 @@ config.scenario<- function(modelpath, uninstall=FALSE) {
         txts<- readLines(fscenario, warn= FALSE)
         for(j in 1:length(txts)) {
           v[i]<- txts[j]
-          if(length(grep("<Scenario>",txts[j]))) {
+          if(length(grep("<Scenario.*>",txts[j]))) {
             v[(i<- i + 1)]<- xml.integration()
+            status<- TRUE
           }
           i<- i + 1
         }
-        ## Write the new scenario file
+        ## Write the new scenario file when integration succeed
         writeLines(v,fscenario)
-        status<- TRUE
+        
       }
     }
   } else {
@@ -122,6 +125,8 @@ config.scenario<- function(modelpath, uninstall=FALSE) {
 #'
 #' @param modelpath The path where model is installed
 #' @param uninstall If TRUE uninstall integration jar
+#' 
+#' @return TRUE if install operation succed
 #'
 #' @export
 config.copylib<- function(modelpath, uninstall=FALSE) {
@@ -129,7 +134,7 @@ config.copylib<- function(modelpath, uninstall=FALSE) {
   jjar<- "rrepast-integration.jar"
   ljar<- paste0(getModelLibDir(),"/",jjar)
   sjar<- jarfile(jjar)
-  
+  v<- FALSE
   if(file.exists(ljar)) {
     if(uninstall) {
       v<- file.remove(ljar)
@@ -209,6 +214,33 @@ configModelDirs<- function(s) {
   setModelLibDir(paste0(getModelDir(),"/lib"))
 }
 
+# Stats ----------
+
+#' @title enginestats.reset
+#' @description  Reset internal statistics
+#'
+#' @export
+enginestats.reset<- function() {
+  assign("pkg.stats.calls", 0, pkg.globals)
+}
+
+#' @title enginestats.calls
+#' @description  Return the current calls to the 'Engine.RunModel' function
+#' 
+#' @param increment A flag telling to increment and update the counter
+#'
+#' @return The number of calls to 'Engine.RunModel' 
+#' @export
+enginestats.calls<- function(increment=FALSE) {
+  v<- get("pkg.stats.calls", pkg.globals)
+  if(increment) {
+    v<- v + 1
+    assign("pkg.stats.calls", v, pkg.globals)  
+  }
+  v
+}
+
+
 # Setters and Getters ----------
 
 #' @title Sets the model name
@@ -248,6 +280,23 @@ setKeyRandom<- function(k){
 #' @export
 getKeyRandom<- function() {
   return(get("pkg.randomSeed", pkg.globals))
+}
+
+#' @title parallelize
+#' @description Tells R/Repast to use multicore. Default 
+#' is using just one core.
+#' 
+#' @param v A Bollean value telling if use multiple cores. 
+#' When null just returns the current setting
+#'
+#' @return Boolean with current state
+#'
+#' @export
+parallelize<- function(v=NULL) {
+  if(!is.null(v)) {
+    assign("pkg.parallelize", v, pkg.globals)
+  }
+  get("pkg.parallelize", pkg.globals)
 }
 
 #' @title Sets output directory
@@ -692,6 +741,7 @@ Engine.getId<- function(e) {
 #'
 #' @export
 Engine.RunModel<- function(e) {
+  enginestats.calls(TRUE)
   .jcall(e,"V","RunModel")
 }
 
@@ -735,6 +785,7 @@ Engine.GetModelOutput<- function(e) {
 #'
 #' @export
 Engine.Finish<- function(e) {
+  enginestats.reset()
   .jcall(e,"V","cleanUpBatch")
 }
 

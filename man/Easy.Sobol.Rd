@@ -5,7 +5,8 @@
 \title{Easy API for Sobol's SA method}
 \usage{
 Easy.Sobol(m.dir, m.ds, m.time = 300, parameters, exp.n = 500,
-  bs.size = 200, exp.r = 1, FUN, default = NULL)
+  bs.size = 200, exp.r = 1, FUN, default = NULL, fsobol = sobol2002,
+  fsampl = AoE.LatinHypercube)
 }
 \arguments{
 \item{m.dir}{The installation directory of some repast model}
@@ -22,9 +23,13 @@ Easy.Sobol(m.dir, m.ds, m.time = 300, parameters, exp.n = 500,
 
 \item{exp.r}{The number of experiment replications}
 
-\item{FUN}{The calibration function.}
+\item{FUN}{The objective function.}
 
 \item{default}{The alternative values for parameters which should be kept fixed}
+
+\item{fsobol}{The alternative function for calculating sobol indices}
+
+\item{fsampl}{The function for sampling data}
 }
 \value{
 A list with holding experimnt, object and charts
@@ -33,4 +38,3 @@ A list with holding experimnt, object and charts
 This functions wraps all required calls to perform 
 Sobol method for global sensitivity analysis.
 }
-

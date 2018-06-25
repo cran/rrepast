@@ -9,6 +9,37 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+## R/Repast [0.7.0] - 2018-06-25
+### Added
+- Easy.Run Compact call for running a simulation model
+- hybrid.distance A helper function for calculating categorical/quantitative metric
+- hybrid.value A helper function for generating a list with a value and a range
+- enginestats.reset Reset the internal statistics
+- enginestats.calls Update/return the number of model invocations
+- rrepast-plots.R New file for separate the ploting functions
+- rrepast-parallel.R New file adding parallel model execution support
+- parallelize Configure R/Repast for running model in parallel using multicore
+- ParallelInit Initialize the parallel execution environment
+- ParallelClose Shutdown the parallel execution environment
+- ParallelRun Parallel model execution
+- ParallellRunExperiment Parallel experimental setup execution
+- WrapperRun Facade for model execution
+- WrapperRunExperiment Facade for experiment execution
+- lcontains Auxiliary function for checking if a list contains an element 
+- lget Auxiliary function for getting a list element value
+- AddFactor0 Polimorphic function for creating factos with range and levels
+- GetFactorLevels Returns the levels of a R/Repast factor
+
+
+### Changed
+- Easy.Stability Added a new parameter for modifying the default model parameters
+- Easy.Setup Checks added
+- Easy.Sobol for parallel execution
+- AddFactor New parameter for truncating values
+
+### Fixed
+- config.scenario Bug detecting the <Scenario> tag
+- config.copylib Bug on returning value
 
 
 ## R/Repast [0.6.0] - 2017-03-27

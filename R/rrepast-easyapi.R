@@ -53,6 +53,31 @@ Easy.getPlot<- function(obj, c, key) {
   p
 }
 
+#' @title Easy API for running a model
+#' 
+#' @description This function provides a simple wrapper for performing a single 
+#' or replicated model execution with a single set of parameters.
+#' 
+#' @param m.dir The installation directory of some repast model
+#' @param m.ds The name of any model aggregate dataset
+#' @param m.time The total simulated time
+#' @param r The number of replications
+#' @param default The alternative values for the default model parameters
+#' 
+#' @export
+Easy.Run<- function(m.dir, m.ds, m.time=300, r=1, default=NULL) {
+  # --> my.model<- Model(modeldir= m.dir, maxtime = m.time, dataset= m.ds, load=TRUE)  
+  
+  ## --- Update if needed the default parameters
+  # --> if(!is.null(default)) {
+  # -->   UpdateDefaultParameters(my.model, default)  
+  # --> }
+  
+  # --> v<- Run(my.model, r)
+  # --> v
+  WrapperRun(m.dir, m.ds, m.time, r, c(), NULL, default)
+}
+
 #' @title Easy API for output stability
 #' 
 #' @description This functions run model several times in order to determine 
@@ -67,13 +92,19 @@ Easy.getPlot<- function(obj, c, key) {
 #' @param tries The number of experiment replications
 #' @param vars The model's output variables for compute CoV
 #' @param FUN The calibration function.
+#' @param default The alternative values for parameters which should be kept fixed
 #' 
 #' @return A list with holding experimnt, object and charts 
 #' 
 #' @export
-Easy.Stability<- function(m.dir, m.ds, m.time=300, parameters, samples=1, tries=100, vars= c(), FUN) {
+Easy.Stability<- function(m.dir, m.ds, m.time=300, parameters, samples=1, tries=100, vars= c(), FUN, default=NULL) {
   my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
   Load(my.model)
+  
+  ## --- Update if needed the default parameters
+  if(!is.null(default)) {
+    UpdateDefaultParameters(my.model, default)  
+  }
   
   ## --- Sample the parameter space
   sampling<- AoE.RandomSampling(samples, parameters)
@@ -111,7 +142,7 @@ Easy.Stability<- function(m.dir, m.ds, m.time=300, parameters, samples=1, tries=
 
 #' @title Easy API for Morris's screening method
 #' 
-#' @description This functions wraps all calls to perform Morris method.
+#' @description This function wraps all calls to perform Morris method.
 #' 
 #' @param m.dir The installation directory of some repast model
 #' @param m.ds The name of any model aggregate dataset
@@ -132,13 +163,13 @@ Easy.Morris<- function(m.dir, m.ds, m.time=300, parameters, mo.p, mo.r, exp.r, F
   my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
   Load(my.model)
   
-  ## --- Create Morris object
-  v.morris<- AoE.Morris(parameters,p=mo.p,r=mo.r)
-  
   ## --- Update if needed the default parameters
   if(!is.null(default)) {
     UpdateDefaultParameters(my.model, default)  
   }
+
+  ## --- Create Morris object
+  v.morris<- AoE.Morris(parameters,p=mo.p,r=mo.r)
   
   
   ## --- Get the model declared paramters
@@ -154,7 +185,7 @@ Easy.Morris<- function(m.dir, m.ds, m.time=300, parameters, mo.p, mo.r, exp.r, F
   o<- getExperimentOutput(exp)
   for(k in colnames(o)) {
     if(k != "pset") {
-      m<- t(df2matrix(getExperimentOutput(exp),c(k)))
+      m<- as.vector(df2matrix(getExperimentOutput(exp),c(k)))
       tell(v.morris,m)
       
       ## --- Plot Morris output
@@ -182,43 +213,62 @@ Easy.Morris<- function(m.dir, m.ds, m.time=300, parameters, mo.p, mo.r, exp.r, F
 #' @param exp.n The experiment sample size
 #' @param exp.r The number of experiment replications
 #' @param bs.size The bootstrap sample size for sobol method
-#' @param FUN The calibration function.
+#' @param FUN The objective function.
 #' @param default The alternative values for parameters which should be kept fixed
+#' @param fsobol The alternative function for calculating sobol indices
+#' @param fsampl The function for sampling data
 #' 
 #' @return A list with holding experimnt, object and charts 
 #' 
+#' @importFrom stats IQR quantile
 #' @importFrom sensitivity tell
-#' @importFrom sensitivity sobol sobolmartinez sobol2007
+#' @importFrom sensitivity sobol sobol2002 sobol2007 sobolmartinez soboljansen
 #' 
 #' @export
-Easy.Sobol<- function(m.dir, m.ds, m.time=300, parameters,exp.n = 500, bs.size = 200, exp.r=1, FUN, default=NULL) {
+Easy.Sobol<- function(m.dir, m.ds, m.time=300, parameters,exp.n = 500, bs.size = 200, exp.r=1, FUN, default=NULL, fsobol=sobol2002, fsampl=AoE.LatinHypercube) {
   ## --- Instantiate the model
-  my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
-  Load(my.model)
+  # (2017/06/10) -----> my.model<- Model(modeldir=m.dir,maxtime = m.time, dataset=m.ds)
+  # (2017/06/10) -----> Load(my.model)
   
   ## --- Update if needed the default parameters
-  if(!is.null(default)) {
-    UpdateDefaultParameters(my.model, default)  
+  # (2017/06/10) -----> if(!is.null(default)) {
+  # (2017/06/10) ----->   UpdateDefaultParameters(my.model, default)  
+  # (2017/06/10) -----> }
+  
+  fix.outliers<- function(x, na.rm = TRUE, ...) {
+    qnt<- quantile(x, probs=c(.5, .95), na.rm = na.rm, ...)
+    H<- 1.5 * IQR(x, na.rm = na.rm)
+    y<- x
+    y[x < (qnt[1] - H)]<- (qnt[1] - H)
+    y[x > (qnt[2] + H)]<- (qnt[2] + H)
+    y
   }
   
+  if(!is.function(FUN)) { stop("Invalid objective function!") }
+  if(!is.function(fsobol)) { stop("Invalid sobol function!") }  
+  
   ## --- Get the model declared paramters
-  parms<- GetSimulationParameters(my.model)
+  # (2017/06/10) -----> parms<- GetSimulationParameters(my.model)
   
   ## --- Create a Sobol object
-  my.obj<- AoE.Sobol(n= exp.n, parameters, nb=bs.size, fun.sobol=sobol2007)
+  my.obj<- AoE.Sobol(n= exp.n, parameters, nb=bs.size, fun.doe = AoE.LatinHypercube, fun.sobol=fsobol)
   
   # Build the experimental parameter set
-  exp.design<- BuildParameterSet(my.obj$X,parms)
+  # (2017/06/10) -----> exp.design<- BuildParameterSet(my.obj$X,parms)
   
   ## --- Run the experimental setup
-  exp<- RunExperiment(my.model,r=exp.r,exp.design,FUN)
+  # (2017/06/10) -----> exp<- RunExperiment(my.model,r=exp.r,exp.design,FUN)
+  
+  exp<- WrapperRunExperiment(m.dir, m.ds, m.time, exp.r, my.obj$X, FUN, default)
   
   charts<- c()
   o<- getExperimentOutput(exp)
   for(k in colnames(o)) {
     if(k != "pset") {
       m<- t(df2matrix(getExperimentOutput(exp),c(k)))
-      tell(my.obj,m)
+      #tell(my.obj,  fix.outliers(m))
+      #tell(my.obj, (m-mean(m))/sd(m))
+      tell(my.obj, m)
       
       # -- First order indexes
       chart_0<- Plot.Sobol(my.obj, 1, paste("Sobol indexes for", k))
@@ -248,16 +298,23 @@ Easy.Sobol<- function(m.dir, m.ds, m.time=300, parameters,exp.n = 500, bs.size =
 #' the base directory. The deployment directory is \code{/rrepast-deployment/}.
 #' 
 #' @param model The base directory where Repast model is installed.
+#' @param multicore Bolean flag indicating to use multiplecore.
 #' @param deployment The directory to save the output and logs.
 #' 
 #' @export
-Easy.Setup<- function(model, deployment=c()){
-  
+Easy.Setup<- function(model, multicore=FALSE, deployment=c()){
   ## Check if model has been configured with the integration code
   if(!config.check(model)) {
-    config.copylib(model)
-    config.scenario(model)
+    if(!config.copylib(model)) {
+      stop("Error deploying integration libraries!")
+    }
+    if(!config.scenario(model)) {
+      stop("Unable to configure integration code!")
+    }
   }
+  
+  ## Multicore selection
+  parallelize(multicore)
   
   if(length(deployment) == 0) {
     deployment<- paste0(model,"/rrepast-deployment/")
@@ -270,6 +327,9 @@ Easy.Setup<- function(model, deployment=c()){
   
   jvm.setOut("SystemOut.log")
   PB.enable()
+  
+  ## -- Reset stats
+  enginestats.reset()
 }
 
 #' @title Easy.Calibration

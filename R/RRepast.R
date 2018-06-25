@@ -30,6 +30,13 @@
   # progress bar internals
   assign("pkg.progressbar", NULL, pkg.globals)
   assign("pkg.progressbar.enabled", FALSE, pkg.globals)
+  
+  # stats
+  assign("pkg.stats.calls", 0, pkg.globals)
+  
+  # parallelize
+  assign("pkg.parallelize", FALSE, pkg.globals)
+  assign("pkg.runcluster", NULL, pkg.globals)
 
   # default values for model
   assign("pkg.outputdir",paste0(Sys.getenv("TMP"),"/rrepast-deployment/"), pkg.globals)
@@ -647,6 +654,7 @@ SaveSimulationData<- function(as="csv", experiment=NULL) {
 #' @param name The name of factor
 #' @param min The minimun of parameter p
 #' @param max The maximun of parameter p
+#' @param int Boolean for truncating the factor value
 #'
 #' @examples \dontrun{
 #'    f<- AddFactor(name="Age",min=20,max=60)
@@ -655,21 +663,113 @@ SaveSimulationData<- function(as="csv", experiment=NULL) {
 #' @return The collection of created factors
 #'
 #' @export
-AddFactor<- function(factors=c(), lambda="qunif",name, min, max) {
+AddFactor<- function(factors=c(), lambda="qunif",name, min, max, int=FALSE) {
   if(max < min) {
     stop("Invalid factor range!")
   }
 
   # if parameter already existe replace the current value
-  rrow<- c(lambda=lambda,name=name,min=min,max=max)
+  rrow<- c(lambda=lambda,name=name,min=min,max=max, int=int)
   rownames(rrow)<- NULL
-  if(length(factors) > 0 && factors[,"name"] == name) {
+  if(length(factors) > 0 && any(factors[,"name"] == name)) {
     i<- which(factors[,"name"] == name)
     factors[i,]<- c(rrow)
   } else {
     factors<- rbind(factors,c(rrow))
   }
   return(factors)
+}
+
+#' @title AddFactor0
+#'
+#' @description Creates or appends the factor collection
+#'
+#' @param factors The current factor collection
+#' @param ... The variadic parameter list
+#'
+#' @examples \dontrun{
+#'    f<- AddFactor0(name="Age",min=20,max=60)
+#'    f<- AddFactor0(factors=f, name="Weight",min=50,max=120)}
+#'
+#' @return The factor collection
+#'
+#' @export
+AddFactor0<- function(factors=c(), ...) {
+  argv<- list(...)
+  
+  ## Default value 
+  v.lambda<- ifelse(is.null(lget(argv,"lambda")), "qunif", lget(argv,"lambda"))
+  v.int<- ifelse(is.null(lget(argv,"int")), FALSE, lget(argv,"int"))
+  
+  ## Inner auxiliary functions
+  is.range<- function(v) {
+    (lcontains(v,"name") && lcontains(v,"min") && lcontains(v,"max") && (!lcontains(v,"levels")))    
+  }
+  is.levels<- function(v) {
+    (lcontains(v,"name") && lcontains(v,"levels") && !(lcontains(v,"min") || lcontains(v,"max")))    
+  }
+  
+  
+    
+  ## Getting the values 
+  if(is.range(argv)) {
+    name<- lget(argv,"name")  
+    v.min<- lget(argv,"min")
+    v.max<- lget(argv,"max")  
+    if(v.max < v.min) {
+      stop("Invalid factor range!")
+    }
+    
+    rrow<- c(lambda=v.lambda,name=name,min=v.min,max=v.max, int=v.int)
+  } else {
+    if (is.levels(argv)) {
+      name<- lget(argv,"name")  
+      v.levels<- lget(argv,"levels")
+      
+      rrow<- c(lambda=v.lambda,name=name,levels=as.list(v.levels))
+    } else {
+      stop("Invalid parameter combination!")
+    }
+  }
+  
+  # Add or replace the value
+  rownames(rrow)<- NULL
+  if(length(factors) > 0 && any(factors[,"name"] == name)) {
+    i<- which(factors[,"name"] == name)
+    factors[i,]<- c(rrow)
+  } else {
+    factors<- rbind(factors,c(rrow))
+  }
+  
+  factors
+}
+
+#' @title GetFactorLevels
+#'
+#' @description Returns the fator's levels
+#'
+#' @param factors The current factor collection
+#' @param name The factor name
+#'
+#' @examples \dontrun{
+#'    f<- AddFactor0(name="Age",levels=c(25,30,40,65))
+#'    f<- AddFactor0(factors=f, name="Weight",levels=c(60,70,80,90))
+#'    
+#'    GetFactorLevels(factors=f, "Age")}
+#'
+#' @return Levels
+#'
+#' @export
+GetFactorLevels<- function(factors, name) {
+  mylevels<- c()
+  if(length(factors) > 0 && any(factors[,"name"] == name)) {
+    i<- which(factors[,"name"] == name)
+    n<- ncol(factors) 
+    for(j in (which(colnames(factors) == "levels1")):n) {
+      mylevels<- c(mylevels, factors[[i, j]])
+    }
+  }  
+  mylevels
 }
 
 #' @title Get the number of factors
@@ -700,8 +800,16 @@ GetFactorsSize<- function(factors) {
 #'
 #' @export
 ApplyFactorRange<- function(design, factors) {
+  # trunc if flag 'f' is true
+  trunciftrue<- function(v, f) {
+    if(f) {
+      v<- trunc(v)
+    }
+    v
+  }
+  
   k<- GetFactorsSize(factors)
-  d<- sapply(1:k, function(p) {match.fun(factors[p,"lambda"])(design[,p],as.numeric(factors[p,"min"]),as.numeric(factors[p,"max"]))})
+  d<- sapply(1:k, function(p) {trunciftrue(match.fun( factors[p,"lambda"])(design[,p],as.numeric(factors[p,"min"]),as.numeric(factors[p,"max"])), factors[p,"int"])})
 
   if(is.null(nrow(d))) {
     ## --- Handle the case where sample size is 1
@@ -735,7 +843,7 @@ ApplyFactorRange<- function(design, factors) {
 #'
 #'    p<- GetSimulationParameters(e)
 #'
-#'    d<- LatinHypercube(factors=f)
+#'    d<- AoE.LatinHypercube(factors=f)
 #'
 #'    p1<- BuildParameterSet(d,p)}
 #'
