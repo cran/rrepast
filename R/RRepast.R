@@ -22,6 +22,7 @@
   assign("pkg.scenariodir", NA, pkg.globals)
   assign("pkg.modellibdir", NA, pkg.globals)
   assign("pkg.id", NA, pkg.globals)
+  assign("pkg.cwd", NA, pkg.globals)
 
   # global simulation results
   assign("pkg.parameters", data.frame(), pkg.globals)
@@ -37,6 +38,7 @@
   # parallelize
   assign("pkg.parallelize", FALSE, pkg.globals)
   assign("pkg.runcluster", NULL, pkg.globals)
+  assign("pkg.maxcores", getpkgdefaultcores(), pkg.globals)
 
   # default values for model
   assign("pkg.outputdir",paste0(Sys.getenv("TMP"),"/rrepast-deployment/"), pkg.globals)
@@ -584,7 +586,7 @@ SetResultsParameters<- function(d) {
 #'
 #' @return The id of saved data
 #'
-#' @importFrom xlsx write.xlsx
+## @importFrom xlsx write.xlsx
 #' @importFrom digest digest
 #' @importFrom utils write.csv
 #' @export
@@ -636,11 +638,11 @@ SaveSimulationData<- function(as="csv", experiment=NULL) {
            f1<- paste0(f1,".xlsx")
            f2<- paste0(f2,".xlsx")
 
-           write.xlsx(paramset, f0)
+           xlsx::write.xlsx(paramset, f0)
            if(!is.null(output)) {
-             write.xlsx(output, f1)
+             xlsx::write.xlsx(output, f1)
            }
-           write.xlsx(dataset, f0)
+           xlsx::write.xlsx(dataset, f0)
          })
   return(hash)
 }

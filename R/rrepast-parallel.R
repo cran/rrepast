@@ -13,16 +13,16 @@
 #' 
 #' @description Initialize the parallel execution environment for R/Repast
 #' 
-#' @importFrom doParallel registerDoParallel
+# @importFrom doSNOW registerDoSNOW
 #' @importFrom parallel makeCluster
 #' @importFrom parallel detectCores
 #' 
 #' @export
 ParallelInit<- function() {
   ## --- Prepare the parallel environment for running 
-  v<- makeCluster((detectCores() - 1)) #, outfile="")
-  #registerDoSNOW(v)  
-  registerDoParallel(v)
+  v<- makeCluster(getpkgcores()) #, outfile="")
+  doSNOW::registerDoSNOW(v)  
+  #registerDoParallel(v)
   assign("pkg.runcluster", v, pkg.globals)
 }
 
@@ -37,7 +37,52 @@ ParallelClose<- function() {
   ## --- Clean up cluster
   stopCluster(get("pkg.runcluster", pkg.globals))
 }
-  
+
+#' @title getpkgdefaultcores
+#' 
+#' @description Provides the package default parallelism level which is 80\% of total cores available
+#' 
+#' @return Cores used by R/Repast
+#'  
+#' @export
+getpkgdefaultcores<- function() {
+  v<- trunc(parallel::detectCores()*0.8)
+  ifelse(v < 1, 1, v)
+}
+
+#' @title setpkgcores
+#' 
+#' @description Configures the maximum number of cores to be used in parallel computations
+#' 
+#' @param v The number of cores
+#'  
+#' @export
+setpkgcores<- function(v) {
+  assign("pkg.maxcores", v, pkg.globals)
+}
+
+#' @title getpkgcores
+#' 
+#' @description Returns the maximum number of cores to be used in parallel computations
+#' 
+#' @return The number of cores
+#'  
+#' @export
+getpkgcores<- function() {
+  get("pkg.maxcores", pkg.globals)  
+}
+
+#' @title ShowUsedCores
+#' 
+#' @description Prints the number of cores used
+#' 
+#' @export
+ShowCores<- function() {
+  cores<- ifelse(!parallelize(), 1, getpkgcores() )  
+  v<- paste0("***** Using ", cores, " of ",  parallel::detectCores(), " available cores *****")
+  print(v)
+}
+
 #' @title ParallelRun
 #'
 #' @description Run simulations in parallel. This function 
@@ -129,7 +174,7 @@ ParallelRun<- function(modeldir, datasource, maxtime, r=1, seed=c(), design=NULL
   
   ## --- Progress bar function
   progress<- function(n) { 
-    print(sprintf("PB.update(%d)",n))
+    #print(sprintf("PB.update(%d)",n))
     PB.update(n) 
   }
   opts<- list(progress=progress)
@@ -174,7 +219,7 @@ ParallelRun<- function(modeldir, datasource, maxtime, r=1, seed=c(), design=NULL
 #'
 #' @return A list with output and dataset
 #' @importFrom foreach foreach %dopar%
-#' @importFrom doParallel registerDoParallel
+## @importFrom doParallel registerDoParallel
 #' @importFrom utils sessionInfo
 #' @export
 ParallellRunExperiment<- function(modeldir, datasource, maxtime, r=1, design, FUN, default=NULL) {
@@ -267,7 +312,7 @@ WrapperRun<- function(modeldir, datasource, maxtime,  r=1, seed=c(), design=NULL
     v<- Run(my.model, r)
   } else {
     ParallelInit()
-    v<- ParallelRun(modeldir, maxtime, datasource, r, seed=c(), design, default)
+    v<- ParallelRun(modeldir, datasource, maxtime, r, seed=c(), design, default)
     ParallelClose()
   } 
   v

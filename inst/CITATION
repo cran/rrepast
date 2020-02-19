@@ -1,10 +1,19 @@
 year <- sub("-.*", "", meta$Date)
 note <- sprintf("R package version %s", meta$Version)
 
-bibentry(bibtype = "Manual",
-         title = "{rrepast}: Running 'Repast Simphony' models inside R environment",
-         author = c(person("Antonio", "Prestes Garcia", role = c("aut","cre")),
-                    person("Alfonso", "Rodriguez-Paton", role = c("aut","ths"))),
-         year = year,
+bibentry(bibtype = "article",
+         textVersion = paste0("Antonio Prestes Garcia, Alfonso Rodriguez-Paton (", year, ").",
+                      "Sensitivity analysis of Repast computational ecology models with R/Repast. Ecology and Evolution, 6(24).",
+                      " http://doi.org/10.1002/ece3.2580 ", note, "."),  
+         title = "Sensitivity analysis of Repast computational ecology models with R/Repast",
+         author = c(person("Antonio", "Prestes Garc{\\'{i}}a", role = c("aut","cre")),
+                    person("Alfonso", "Rodr{\'{i}}guez-Pat{\'{o}}n", role = c("aut","ths"))),
+         doi = "10.1002/ece3.2580",
+         issn = 20457758,
+         year = 2016,
+         number = 24,
+         volume = 6,
+         journal = "Ecology and Evolution",
          note = note,
-         url = "https://CRAN.R-project.org/package=rrepast")
+         url = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5192867/")
+      
